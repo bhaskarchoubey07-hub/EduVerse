@@ -85,6 +85,30 @@ export default function SubjectWorldsHubPage() {
           </p>
         </div>
 
+        {/* FLAGSHIP 3D BIOLOGY LAB HERO BANNER */}
+        <div className="rounded-3xl bg-gradient-to-r from-emerald-950/70 via-teal-950/40 to-slate-900 border border-emerald-500/40 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-emerald-950/50">
+          <div className="space-y-2 text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ⭐ Flagship 3D Laboratory
+              </span>
+              <span className="text-xs text-slate-400">Class 10 &amp; 12 Biology</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+              <Dna className="w-6 h-6 text-emerald-400" /> Interactive 3D Biology Lab &amp; Human Anatomy
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Dissect and isolate the 9 human body systems in 3D, simulate 4-chambered cardiac blood flow, observe alveolar gas exchange, and zoom down to microscopic Animal vs Plant cells with AI Tutor integration.
+            </p>
+          </div>
+          <Link
+            href="/learn/biology"
+            className="shrink-0 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-xl shadow-emerald-500/30 flex items-center gap-2 transition-all hover:scale-105"
+          >
+            Launch 3D Biology Lab <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
         {/* 2-COLUMN FEATURED 3D LAB WORKSPACE */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Column: World Selector Cards (5 cols) */}

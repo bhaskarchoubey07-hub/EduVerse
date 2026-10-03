@@ -23,6 +23,7 @@ import {
   Award,
   Settings,
   Flame,
+  Dna,
 } from "lucide-react";
 import { useAuth } from "@/lib/store/auth-context";
 import { useDataStore } from "@/lib/store/data-store";
@@ -39,6 +40,7 @@ export function Navbar() {
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: GraduationCap },
+    { name: "3D Biology Lab", href: "/learn/biology", icon: Dna, is3D: true, isNew: true },
     { name: "3D Worlds", href: "/worlds", icon: Compass, is3D: true },
     { name: "AI Planner", href: "/planner", icon: Calendar },
     { name: "10-Yr Papers", href: "/papers", icon: FileText },

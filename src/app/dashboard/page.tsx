@@ -24,6 +24,7 @@ import {
   Calendar,
   Award,
   Layers,
+  Dna,
 } from "lucide-react";
 import { useAuth } from "@/lib/store/auth-context";
 import { useDataStore } from "@/lib/store/data-store";
@@ -196,7 +197,23 @@ export default function StudentDashboardPage() {
         )}
 
         {/* QUICK ACTION TILES */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <Link
+            href="/learn/biology"
+            className="p-4 rounded-2xl glass-card border border-emerald-500/40 hover:border-emerald-400 flex flex-col justify-between group bg-emerald-950/20 col-span-2 sm:col-span-1 shadow-lg shadow-emerald-950/40"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-600/30 text-emerald-300 flex items-center justify-center group-hover:scale-110 transition-transform border border-emerald-400/30">
+              <Dna className="w-5 h-5" />
+            </div>
+            <div className="mt-4">
+              <div className="text-xs font-bold text-white flex items-center justify-between">
+                <span className="flex items-center gap-1">3D Biology Lab <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/30 text-emerald-300 font-mono">NEW</span></span>
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">Anatomy, Heart &amp; Cells 3D</p>
+            </div>
+          </Link>
+
           <Link
             href="/worlds"
             className="p-4 rounded-2xl glass-card border border-amber-500/30 hover:border-amber-400 flex flex-col justify-between group"
@@ -209,7 +226,7 @@ export default function StudentDashboardPage() {
                 <span>3D Subject Worlds</span>
                 <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-1 transition-transform" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">Interactive molecular &amp; physics labs</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Interactive molecular &amp; physics</p>
             </div>
           </Link>
 
@@ -247,15 +264,15 @@ export default function StudentDashboardPage() {
 
           <Link
             href="/trophies"
-            className="p-4 rounded-2xl glass-card border border-emerald-500/30 hover:border-emerald-500 flex flex-col justify-between group"
+            className="p-4 rounded-2xl glass-card border border-amber-500/30 hover:border-amber-500 flex flex-col justify-between group"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Award className="w-5 h-5" />
             </div>
             <div className="mt-4">
               <div className="text-xs font-bold text-white flex items-center justify-between">
                 <span>3D Trophy Room</span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-1 transition-transform" />
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">{gamificationState.totalTrophiesUnlocked} Trophies Unlocked</p>
             </div>
