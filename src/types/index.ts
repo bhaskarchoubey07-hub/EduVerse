@@ -451,3 +451,5 @@ export interface ThreeDModelMetadata {
   creator: string;
   source: string;
 }
+
+export * from "./content-engine";
