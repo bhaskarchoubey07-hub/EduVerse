@@ -31,6 +31,7 @@ import { useDataStore } from "@/lib/store/data-store";
 import { SUBJECTS } from "@/lib/data/mock-db";
 import { getDaysUntil, formatDate } from "@/lib/utils";
 import { LearningUniversePlanet } from "@/components/3d/LearningUniversePlanet";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
@@ -59,10 +60,11 @@ export default function StudentDashboardPage() {
   const dueRevisions = savedRevisions.slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-[#070a14] bg-grid-pattern flex flex-col">
-      <Navbar />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-[#070a14] bg-grid-pattern flex flex-col">
+        <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-28 lg:pb-8">
+        <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-28 lg:pb-8">
         {/* TOP WELCOME & GOAL STRIP */}
         <div className="rounded-3xl glass-panel-glow p-5 sm:p-8 border border-white/10 relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
@@ -487,6 +489,7 @@ export default function StudentDashboardPage() {
       </main>
 
       <Footer />
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

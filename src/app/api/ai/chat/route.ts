@@ -10,31 +10,36 @@ export async function POST(req: NextRequest) {
       board = "cbse",
       classLevel = 10,
       subject = "Science",
-      chapter = "General",
+      chapter = "",
       topic = "",
       current3DObject = "",
-      language = "english",
       history = [],
-      userId = "demo-student-001",
+      userId = "anonymous-student",
     } = body;
 
+    // 1. Validation & sanitization
     if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return NextResponse.json({ error: "Message is required." }, { status: 400 });
     }
 
-    const trimmed = message.trim();
-    if (trimmed.length > 2500) {
+    const trimmedQuery = message.trim();
+    if (trimmedQuery.length === 0) {
+      return NextResponse.json({ error: "Message cannot be empty." }, { status: 400 });
+    }
+
+    if (trimmedQuery.length > 2500) {
       return NextResponse.json(
-        { error: "Message exceeds 2500 character limit" },
+        { error: "Message exceeds maximum allowed length of 2500 characters." },
         { status: 400 }
       );
     }
 
-    // Rate Limiting
+    // 2. Daily Rate Limiting Check (Section 25 & 27)
     const rateStatus = await AIRateLimiter.checkLimit(userId);
     if (!rateStatus.allowed) {
       return NextResponse.json(
         {
+          error: rateStatus.reason,
           reply: `⚠️ ${rateStatus.reason}`,
           suggestedFollowUps: [
             "Review verified syllabus notes",
@@ -42,16 +47,18 @@ export async function POST(req: NextRequest) {
             "Try offline flashcards",
           ],
           rateLimitExceeded: true,
+          dailyLimit: rateStatus.dailyLimit,
           remainingToday: 0,
         },
         { status: 429 }
       );
     }
 
-    // Unified AI Provider
+    // 3. Select AI Provider & Generate response
     const provider = getAIProvider();
-    const result = await provider.generateExplanation({
-      query: trimmed,
+
+    const aiResponse = await provider.generateExplanation({
+      query: trimmedQuery,
       mode: mode as AITutorMode,
       context: {
         board,
@@ -60,26 +67,29 @@ export async function POST(req: NextRequest) {
         chapter,
         topic,
         current3DObject,
-        language,
       },
       history,
     });
 
+    // 4. Increment usage count
     await AIRateLimiter.incrementUsage(userId);
 
     return NextResponse.json({
-      reply: result.content,
-      suggestedFollowUps: result.suggestedFollowUps,
-      source: result.providerName,
-      modelUsed: result.modelUsed,
+      reply: aiResponse.content,
+      suggestedFollowUps: aiResponse.suggestedFollowUps,
+      provider: aiResponse.providerName,
+      modelUsed: aiResponse.modelUsed,
       remainingToday: Math.max(0, rateStatus.remainingToday - 1),
+      dailyLimit: rateStatus.dailyLimit,
+      isGroundedInVerifiedContent: aiResponse.isGroundedInVerifiedContent,
+      generatedAt: aiResponse.generatedAt,
     });
-  } catch (err: any) {
-    console.error("AI Tutor Route Error:", err);
+  } catch (error: any) {
+    console.error("AI Chat Route Error:", error);
     return NextResponse.json(
       {
         error: "AI Tutor is temporarily unavailable. Please try again shortly.",
-        reply: "AI Tutor is temporarily unavailable. Please check your connection or try again in a few moments.",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
       },
       { status: 500 }
     );

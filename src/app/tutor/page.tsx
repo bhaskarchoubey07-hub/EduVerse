@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/store/auth-context";
 import { useDataStore } from "@/lib/store/data-store";
 import { AICompanionAvatar3D } from "@/components/3d/AICompanionAvatar3D";
 import { AITutorMessage } from "@/types";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 type TutorMode = "explain" | "step_by_step" | "hint_first" | "quiz" | "homework_helper";
 
@@ -453,19 +454,21 @@ How can I help you today?
 
 export default function AITutorPage() {
   return (
-    <div className="min-h-screen bg-[#070a14] bg-grid-pattern flex flex-col">
-      <Navbar />
-      <Suspense
-        fallback={
-          <div className="flex-1 flex items-center justify-center p-12 text-slate-400 text-xs">
-            <Bot className="w-6 h-6 animate-pulse text-cyan-400 mr-2" />
-            Loading EduVerse AI Companion session...
-          </div>
-        }
-      >
-        <TutorChatContent />
-      </Suspense>
-      <Footer />
-    </div>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-[#070a14] bg-grid-pattern flex flex-col">
+        <Navbar />
+        <Suspense
+          fallback={
+            <div className="flex-1 flex items-center justify-center p-12 text-slate-400 text-xs">
+              <Bot className="w-6 h-6 animate-pulse text-cyan-400 mr-2" />
+              Loading EduVerse AI Companion session...
+            </div>
+          }
+        >
+          <TutorChatContent />
+        </Suspense>
+        <Footer />
+      </div>
+    </ProtectedRoute>
   );
 }
