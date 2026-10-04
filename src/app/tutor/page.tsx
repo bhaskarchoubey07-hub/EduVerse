@@ -112,6 +112,13 @@ How can I help you today?
         content: data.reply,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         suggestedFollowUps: data.suggestedFollowUps || [],
+        detectedSubject: data.detectedSubject,
+        groundingChapter: data.matchedChapter,
+        confidence: data.confidence,
+        isTopicSwitched: data.isTopicSwitched,
+        topicSwitchReason: data.topicSwitchReason,
+        is3DGrounded: data.is3DGrounded,
+        grounded3DPartName: data.grounded3DPartName,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -128,6 +135,30 @@ How can I help you today?
       setCompanionMood("idle");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFeedback = async (msgId: string, rating: "correct" | "incorrect" | "irrelevant", queryText: string, replyText: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, feedbackRating: rating } : m))
+    );
+    try {
+      await fetch("/api/ai/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,
+          query: queryText,
+          answerSnippet: replyText.slice(0, 300),
+          subject: selectedSubject,
+          chapter: selectedChapter,
+          board: user?.boardId || "cbse",
+          classLevel: user?.classLevel || 10,
+          userId: user?.id || "student",
+        }),
+      });
+    } catch {
+      // ignore
     }
   };
 
@@ -316,13 +347,68 @@ How can I help you today?
                     : "bg-[#0c1228] border border-white/10 text-slate-200 rounded-tl-none shadow-xl"
                 }`}
               >
+                {/* RAG Context & Verification Badges */}
+                {msg.role === "assistant" && (msg.isTopicSwitched || msg.is3DGrounded || msg.confidence) && (
+                  <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-white/5 text-[10px] font-mono">
+                    {msg.isTopicSwitched && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        🔄 Switched to {msg.detectedSubject?.toUpperCase()}
+                      </span>
+                    )}
+                    {msg.is3DGrounded && (
+                      <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                        🧪 3D Grounded: {msg.grounded3DPartName || "Anatomical Part"}
+                      </span>
+                    )}
+                    {msg.confidence && (
+                      <span className={`px-2 py-0.5 rounded-full border ${
+                        msg.confidence === "HIGH" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                      }`}>
+                        Verified: {msg.confidence} Confidence
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
                   {msg.content}
                 </div>
 
                 {msg.role === "assistant" && (
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
                     <span className="text-[10px] font-mono">{msg.timestamp}</span>
+
+                    {/* Student Feedback (Phase 57) */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-500 mr-1 hidden sm:inline">Feedback:</span>
+                      <button
+                        onClick={() => handleFeedback(msg.id, "correct", "Current question", msg.content)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                          msg.feedbackRating === "correct" ? "bg-emerald-500/30 text-emerald-300 font-bold" : "bg-white/5 hover:bg-white/10 text-slate-400 hover:text-emerald-400"
+                        }`}
+                        title="Mark answer as Correct"
+                      >
+                        👍 Correct
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(msg.id, "incorrect", "Current question", msg.content)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                          msg.feedbackRating === "incorrect" ? "bg-rose-500/30 text-rose-300 font-bold" : "bg-white/5 hover:bg-white/10 text-slate-400 hover:text-rose-400"
+                        }`}
+                        title="Mark answer as Incorrect"
+                      >
+                        👎 Incorrect
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(msg.id, "irrelevant", "Current question", msg.content)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                          msg.feedbackRating === "irrelevant" ? "bg-amber-500/30 text-amber-300 font-bold" : "bg-white/5 hover:bg-white/10 text-slate-400 hover:text-amber-400"
+                        }`}
+                        title="Mark answer as Irrelevant to context"
+                      >
+                        ⚠️ Irrelevant
+                      </button>
+                    </div>
 
                     <div className="flex items-center gap-2">
                       <button

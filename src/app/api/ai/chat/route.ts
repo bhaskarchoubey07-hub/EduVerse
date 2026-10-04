@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAIProvider, AIRateLimiter, AITutorMode } from "@/lib/ai";
+import { AIRateLimiter, AITutorMode } from "@/lib/ai";
+import { ProductionRAGEngine, RAGExecutionResult } from "@/lib/ai/rag/rag-engine";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
       message,
+      query,
       mode = "explain",
       board = "cbse",
       classLevel = 10,
@@ -17,17 +19,14 @@ export async function POST(req: NextRequest) {
       userId = "anonymous-student",
     } = body;
 
+    const userMessage = (message || query || "").trim();
+
     // 1. Validation & sanitization
-    if (!message || typeof message !== "string") {
+    if (!userMessage) {
       return NextResponse.json({ error: "Message is required." }, { status: 400 });
     }
 
-    const trimmedQuery = message.trim();
-    if (trimmedQuery.length === 0) {
-      return NextResponse.json({ error: "Message cannot be empty." }, { status: 400 });
-    }
-
-    if (trimmedQuery.length > 2500) {
+    if (userMessage.length > 2500) {
       return NextResponse.json(
         { error: "Message exceeds maximum allowed length of 2500 characters." },
         { status: 400 }
@@ -54,13 +53,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Select AI Provider & Generate response
-    const provider = getAIProvider();
-
-    const aiResponse = await provider.generateExplanation({
-      query: trimmedQuery,
-      mode: mode as AITutorMode,
-      context: {
+    // 3. Execute Production RAG
+    const ragResult: RAGExecutionResult = await ProductionRAGEngine.executeRAG(
+      userMessage,
+      {
         board,
         classLevel: Number(classLevel) || 10,
         subject,
@@ -68,28 +64,35 @@ export async function POST(req: NextRequest) {
         topic,
         current3DObject,
       },
-      history,
-    });
+      mode as AITutorMode,
+      history
+    );
 
-    // 4. Increment usage count
     await AIRateLimiter.incrementUsage(userId);
 
     return NextResponse.json({
-      reply: aiResponse.content,
-      suggestedFollowUps: aiResponse.suggestedFollowUps,
-      provider: aiResponse.providerName,
-      modelUsed: aiResponse.modelUsed,
-      remainingToday: Math.max(0, rateStatus.remainingToday - 1),
+      reply: ragResult.content,
+      suggestedFollowUps: ragResult.suggestedFollowUps,
+      detectedSubject: ragResult.detectedSubject,
+      matchedChapter: ragResult.matchedChapter,
+      confidence: ragResult.confidence,
+      isTopicSwitched: ragResult.isTopicSwitched,
+      topicSwitchReason: ragResult.topicSwitchReason,
+      is3DGrounded: ragResult.is3DGrounded,
+      grounded3DPartName: ragResult.grounded3DPartName,
+      providerName: ragResult.providerName,
+      modelUsed: ragResult.modelUsed,
+      verificationAudit: ragResult.verificationAudit,
+      provenance: ragResult.provenance,
       dailyLimit: rateStatus.dailyLimit,
-      isGroundedInVerifiedContent: aiResponse.isGroundedInVerifiedContent,
-      generatedAt: aiResponse.generatedAt,
+      remainingToday: Math.max(0, rateStatus.remainingToday - 1),
     });
-  } catch (error: any) {
-    console.error("AI Chat Route Error:", error);
+  } catch (err: any) {
+    console.error("AI Chat Route Error:", err);
     return NextResponse.json(
       {
         error: "AI Tutor is temporarily unavailable. Please try again shortly.",
-        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        reply: "AI Tutor is temporarily unavailable. Please check your connection or try again shortly.",
       },
       { status: 500 }
     );

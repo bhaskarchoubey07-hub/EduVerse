@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAIProvider, AIRateLimiter, AITutorMode } from "@/lib/ai";
+import { AIRateLimiter, AITutorMode } from "@/lib/ai";
+import { ProductionRAGEngine, RAGExecutionResult } from "@/lib/ai/rag/rag-engine";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Rate Limiting
+    // Rate Limiting (Phase 25 & 27)
     const rateStatus = await AIRateLimiter.checkLimit(userId);
     if (!rateStatus.allowed) {
       return NextResponse.json(
@@ -48,12 +49,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Unified AI Provider
-    const provider = getAIProvider();
-    const result = await provider.generateExplanation({
-      query: trimmed,
-      mode: mode as AITutorMode,
-      context: {
+    // Execute Production RAG Pipeline (Phases 15–29, 63–67)
+    const ragResult: RAGExecutionResult = await ProductionRAGEngine.executeRAG(
+      trimmed,
+      {
         board,
         classLevel: Number(classLevel) || 10,
         subject,
@@ -62,16 +61,26 @@ export async function POST(req: NextRequest) {
         current3DObject,
         language,
       },
-      history,
-    });
+      mode as AITutorMode,
+      history
+    );
 
     await AIRateLimiter.incrementUsage(userId);
 
     return NextResponse.json({
-      reply: result.content,
-      suggestedFollowUps: result.suggestedFollowUps,
-      source: result.providerName,
-      modelUsed: result.modelUsed,
+      reply: ragResult.content,
+      suggestedFollowUps: ragResult.suggestedFollowUps,
+      detectedSubject: ragResult.detectedSubject,
+      matchedChapter: ragResult.matchedChapter,
+      confidence: ragResult.confidence,
+      isTopicSwitched: ragResult.isTopicSwitched,
+      topicSwitchReason: ragResult.topicSwitchReason,
+      is3DGrounded: ragResult.is3DGrounded,
+      grounded3DPartName: ragResult.grounded3DPartName,
+      source: ragResult.providerName,
+      modelUsed: ragResult.modelUsed,
+      verificationAudit: ragResult.verificationAudit,
+      provenance: ragResult.provenance,
       remainingToday: Math.max(0, rateStatus.remainingToday - 1),
     });
   } catch (err: any) {

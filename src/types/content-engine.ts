@@ -50,6 +50,7 @@ export interface SourceRegistryItem {
   lastChecked: string;
   lastUpdated: string;
   verificationStatus: VerificationLevel;
+  trustLevel?: 1 | 2 | 3 | 4 | 5;
   notes?: string;
 }
 

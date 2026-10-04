@@ -190,6 +190,13 @@ export interface AITutorMessage {
   isStepByStep?: boolean;
   suggestedFollowUps?: string[];
   groundingChapter?: string;
+  detectedSubject?: string;
+  confidence?: "HIGH" | "MEDIUM" | "LOW";
+  isTopicSwitched?: boolean;
+  topicSwitchReason?: string;
+  is3DGrounded?: boolean;
+  grounded3DPartName?: string;
+  feedbackRating?: "correct" | "incorrect" | "irrelevant";
 }
 
 export interface AIConversation {
