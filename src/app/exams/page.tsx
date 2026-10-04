@@ -36,14 +36,14 @@ export default function MockExamsCatalogPage() {
     <div className="min-h-screen bg-[#070a14] bg-grid-pattern flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-28 lg:pb-8">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
             <Award className="w-3.5 h-3.5 text-emerald-400" />
             Official Pattern Mock Examination Engine
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
             Timed Mock Exams &amp; Chapter Tests
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
@@ -52,10 +52,10 @@ export default function MockExamsCatalogPage() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           <button
             onClick={() => setFilterType("all")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap touch-target ${
               filterType === "all"
                 ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
                 : "glass-panel text-slate-400 hover:text-white"

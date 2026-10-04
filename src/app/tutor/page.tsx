@@ -171,7 +171,7 @@ How can I help you today?
   const lastAssistantMessage = messages.filter((m) => m.role === "assistant").slice(-1)[0]?.content;
 
   return (
-    <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-6">
+    <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6 pb-28 lg:pb-6">
       {/* LEFT CONTROL SIDEBAR & 3D COMPANION AVATAR */}
       <aside className="w-full lg:w-80 shrink-0 space-y-4">
         {/* 3D Companion Avatar Widget */}
@@ -396,29 +396,52 @@ How can I help you today?
           <div ref={chatBottomRef} />
         </div>
 
+        {/* Quick Actions Strip for Mobile & Desktop */}
+        <div className="px-4 py-2 bg-slate-950/70 border-t border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">
+            Quick Actions:
+          </span>
+          {[
+            { label: "EXPLAIN THIS", prompt: `Explain this topic clearly with a board exam example: ${selectedSubject}` },
+            { label: "QUIZ ME", prompt: `Give me a 3-question MCQ quiz on ${selectedSubject} with answer keys` },
+            { label: "SUMMARIZE", prompt: `Provide a 5-bullet high-yield summary of key formulas in ${selectedSubject}` },
+            { label: "GIVE ME A TRICK", prompt: `Give me an easy memory trick / mnemonic for ${selectedSubject}` },
+            { label: "BOARD EXAM QUESTION", prompt: `What is the most repeated 5-mark question in ${selectedSubject} for board exams?` },
+          ].map((act, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleSendMessage(act.prompt)}
+              className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-violet-950/80 text-cyan-300 border border-white/10 hover:border-cyan-400/40 shrink-0 transition-all touch-target flex items-center"
+            >
+              {act.label}
+            </button>
+          ))}
+        </div>
+
         {/* Input Bar */}
-        <div className="p-4 border-t border-white/10 bg-slate-900/90">
+        <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/90">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-2 sm:gap-3"
           >
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={`Ask any question in ${selectedSubject} (e.g. "Derive lens formula", "Explain Rusting", "3-mark numerical")...`}
-              className="flex-1 px-4 py-3 rounded-xl bg-slate-950 border border-white/10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+              placeholder={`Ask any question in ${selectedSubject}...`}
+              className="flex-1 px-3 sm:px-4 py-3 rounded-xl bg-slate-950 border border-white/10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 min-h-[48px]"
             />
 
             <button
               type="submit"
               disabled={isLoading || !inputMessage.trim()}
-              className="px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 disabled:opacity-50 text-white font-semibold text-xs shadow-lg shadow-violet-600/25 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 sm:px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 disabled:opacity-50 text-white font-semibold text-xs shadow-lg shadow-violet-600/25 flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-h-[48px] touch-target"
             >
-              <span>Send</span>
+              <span className="hidden sm:inline">Send</span>
               <Send className="w-4 h-4" />
             </button>
           </form>

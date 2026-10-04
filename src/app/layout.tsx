@@ -1,17 +1,33 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/store/auth-context";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
 export const viewport: Viewport = {
   themeColor: "#070a14",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
   title: "EduVerse AI — Board Exam Prep for Class 10, 11 & 12 (CBSE, ICSE, State Boards)",
   description:
     "Learn Smarter. Prepare Better. Achieve More. All-in-one AI tutor, verified 10-year question papers, chapter notes, and timed mock exams for CBSE, ICSE, and State Board success.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "EduVerse AI",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
   keywords: [
     "CBSE Class 10",
     "CBSE Class 12",
@@ -45,7 +61,11 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="min-h-screen bg-[#070a14] text-slate-100 antialiased selection:bg-violet-500 selection:text-white">
         <AuthProvider>
+          <OfflineIndicator />
           {children}
+          <MobileBottomNav />
+          <PWAInstallPrompt />
+          <ServiceWorkerRegister />
         </AuthProvider>
       </body>
     </html>

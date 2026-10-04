@@ -68,21 +68,21 @@ export default function LandingPage() {
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
                 Your Learning <br />
                 <span className="text-gradient-primary">Universe</span> Starts Here.
               </h1>
 
               {/* Subheading */}
-              <p className="text-sm sm:text-lg text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-xs sm:text-base lg:text-lg text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 The all-in-one immersive board preparation platform for **Classes 10, 11 &amp; 12**. Master **CBSE, ICSE/ISC &amp; State Boards** with interactive 3D simulations, adaptive AI study planners, verified 10-year papers, and timed mock exams.
               </p>
 
               {/* CTAs */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2 w-full">
                 <Link
                   href="/onboarding"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-xl shadow-violet-600/30 hover:scale-[1.02] transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-semibold text-xs sm:text-sm shadow-xl shadow-violet-600/30 hover:scale-[1.02] transition-all min-h-[48px] touch-target"
                 >
                   <span>Get Started Free</span>
                   <ArrowRight className="w-4 h-4" />
@@ -90,7 +90,7 @@ export default function LandingPage() {
 
                 <Link
                   href="/worlds"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl glass-panel hover:bg-white/10 text-cyan-300 font-semibold text-sm border border-cyan-500/30 transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-xl glass-panel hover:bg-white/10 text-cyan-300 font-semibold text-xs sm:text-sm border border-cyan-500/30 transition-all min-h-[48px] touch-target"
                 >
                   <Compass className="w-4 h-4 text-cyan-400" />
                   <span>Explore 3D Subject Worlds</span>
@@ -98,7 +98,7 @@ export default function LandingPage() {
               </div>
 
               {/* Trust Badges */}
-              <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-slate-400">
+              <div className="pt-2 sm:pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 text-[11px] sm:text-xs text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" /> CBSE • ICSE • PSEB • State Boards
                 </span>
@@ -112,9 +112,9 @@ export default function LandingPage() {
             </div>
 
             {/* Right Column: 3D Educational Planet (5 cols) */}
-            <div className="lg:col-span-5 h-[360px] sm:h-[440px] flex items-center justify-center relative">
+            <div className="lg:col-span-5 h-[280px] sm:h-[360px] md:h-[440px] flex items-center justify-center relative">
               <div className="w-full h-full rounded-3xl p-1 bg-gradient-to-b from-violet-500/20 via-cyan-500/10 to-transparent border border-white/10 backdrop-blur-xl shadow-2xl">
-                <LearningUniversePlanet size={400} badgeText="Interactive 3D Learning Planet" />
+                <LearningUniversePlanet size={360} badgeText="Interactive 3D Learning Planet" />
               </div>
             </div>
           </div>

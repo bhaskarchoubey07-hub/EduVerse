@@ -53,6 +53,8 @@ import {
 } from "@/lib/data/biology-data";
 import { BiologyLab3D } from "@/components/3d/BiologyLab3D";
 import { BiologyDiagram2D } from "@/components/biology/BiologyDiagram2D";
+import { BiologyBottomSheet } from "@/components/3d/BiologyBottomSheet";
+import { detectDeviceQuality, QualitySetting } from "@/lib/3d/quality-detector";
 
 export default function BiologyLabPage() {
   const { user } = useAuth();
@@ -66,6 +68,10 @@ export default function BiologyLabPage() {
   const [showLabels, setShowLabels] = useState<boolean>(true);
   const [use2DDiagram, setUse2DDiagram] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [qualitySetting, setQualitySetting] = useState<QualitySetting>("auto");
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState<boolean>(false);
+
+  const qualityProfile = detectDeviceQuality(qualitySetting);
 
   // Blood Flow Animation States (Heart Circuit)
   const [bloodFlowActive, setBloodFlowActive] = useState<boolean>(false);
@@ -111,6 +117,7 @@ export default function BiologyLabPage() {
   // Handle user structure selection
   const handleSelectStructure = (structId: string) => {
     setSelectedStructureId(structId);
+    setIsMobileSheetOpen(true);
     setExploredCount((prev) => {
       const next = prev + 1;
       if (next >= 10) {
@@ -258,10 +265,25 @@ export default function BiologyLabPage() {
           </div>
 
           {/* Right Tools & 2D Fallback */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* 3D Quality Selector */}
+            <select
+              value={qualitySetting}
+              onChange={(e) => setQualitySetting(e.target.value as any)}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 border border-white/10 text-cyan-300 focus:outline-none focus:border-cyan-400 touch-target"
+              title="3D Performance Quality Mode"
+              aria-label="3D Quality Mode"
+            >
+              <option value="auto">Auto 3D</option>
+              <option value="high">High (60fps)</option>
+              <option value="balanced">Balanced</option>
+              <option value="performance">Performance</option>
+              <option value="fast_2d">2D Diagram</option>
+            </select>
+
             <button
               onClick={() => setShowLabels(!showLabels)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-target ${
                 showLabels
                   ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
                   : "glass-panel border-white/10 text-slate-400 hover:text-white"
@@ -269,12 +291,12 @@ export default function BiologyLabPage() {
               title="Toggle 3D Labels"
             >
               {showLabels ? <Eye className="w-3.5 h-3.5 text-cyan-400" /> : <EyeOff className="w-3.5 h-3.5" />}
-              <span>{showLabels ? "Labels ON" : "Labels OFF"}</span>
+              <span className="hidden sm:inline">{showLabels ? "Labels ON" : "Labels OFF"}</span>
             </button>
 
             <button
               onClick={() => setUse2DDiagram(!use2DDiagram)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer touch-target ${
                 use2DDiagram
                   ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
                   : "glass-panel border-white/10 text-slate-400 hover:text-white"
@@ -282,14 +304,25 @@ export default function BiologyLabPage() {
               title="Toggle 2D Accessible Diagram"
             >
               <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-              <span>{use2DDiagram ? "3D Mode" : "2D Diagram"}</span>
+              <span>{use2DDiagram ? "3D Mode" : "2D"}</span>
             </button>
           </div>
+        </div>
+
+        {/* Mobile 3D Optimization Status Banner */}
+        <div className="lg:hidden mt-2 py-1.5 px-3 rounded-xl bg-cyan-950/40 border border-cyan-500/20 text-[11px] text-cyan-300 flex items-center justify-between">
+          <span>⚡ 3D optimized mode active ({qualityProfile.tier.toUpperCase()})</span>
+          <button
+            onClick={() => setUse2DDiagram(!use2DDiagram)}
+            className="text-amber-400 font-bold underline ml-2 touch-target flex items-center"
+          >
+            {use2DDiagram ? "Switch 3D" : "View 2D"}
+          </button>
         </div>
       </header>
 
       {/* MAIN LAB WORKSPACE */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start pb-28 lg:pb-8">
         {/* LEFT COLUMN: HOLOGRAPHIC SYSTEM SELECTOR & BONE SEARCH (3 COLS) */}
         <aside className="lg:col-span-3 space-y-4">
           {viewMode === "human_body" ? (
@@ -752,6 +785,25 @@ export default function BiologyLabPage() {
           </div>
         </div>
       )}
+
+      {/* Mobile Touch Bottom Sheet for 3D Anatomical Selection */}
+      <BiologyBottomSheet
+        structure={currentStructure}
+        isOpen={isMobileSheetOpen}
+        onClose={() => setIsMobileSheetOpen(false)}
+        onAskAI={() => {
+          setIsMobileSheetOpen(false);
+          handleAskAI();
+        }}
+        onQuizMe={() => {
+          setIsMobileSheetOpen(false);
+          setViewMode("quiz_mode");
+          const qIdx = BIOLOGY_3D_QUIZZES.findIndex((q) => q.targetStructureId === currentStructure.id);
+          if (qIdx !== -1) setCurrentQuizIndex(qIdx);
+        }}
+        onSaveToNotes={handleSaveToNotes}
+        noteSaved={noteSaved}
+      />
 
       <Footer />
     </div>

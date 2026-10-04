@@ -4,7 +4,7 @@ import { Sparkles, ShieldCheck, BookOpen, Layers, Award } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="w-full bg-[#050811] border-t border-white/10 pt-12 pb-8 text-slate-400">
+    <footer className="w-full bg-[#050811] border-t border-white/10 pt-12 pb-24 lg:pb-8 text-slate-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {/* Brand Col */}

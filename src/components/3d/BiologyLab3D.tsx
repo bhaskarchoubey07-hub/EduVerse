@@ -170,6 +170,10 @@ export function BiologyLab3D({
     let rotationVelocityX = 0;
     let rotationVelocityY = 0;
     let touchDistance = 0;
+    let touchStartTime = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let lastTapTime = 0;
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -180,6 +184,9 @@ export function BiologyLab3D({
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       previousPointerX = clientX;
       previousPointerY = clientY;
+      touchStartX = clientX;
+      touchStartY = clientY;
+      touchStartTime = Date.now();
 
       if ("touches" in e && e.touches.length === 2) {
         const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -238,30 +245,61 @@ export function BiologyLab3D({
       }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e?: MouseEvent | TouchEvent) => {
       isDragging = false;
+      const now = Date.now();
+      const elapsed = now - touchStartTime;
+
+      let clientX = previousPointerX;
+      let clientY = previousPointerY;
+      if (e && "changedTouches" in e && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      } else if (e && "clientX" in e) {
+        clientX = (e as MouseEvent).clientX;
+        clientY = (e as MouseEvent).clientY;
+      }
+
+      const movedDist = Math.sqrt(
+        (clientX - touchStartX) * (clientX - touchStartX) +
+        (clientY - touchStartY) * (clientY - touchStartY)
+      );
+
+      // Tap detection (under 300ms and under 12px drag movement)
+      if (elapsed < 300 && movedDist < 12) {
+        // Check for double tap to reset view
+        if (now - lastTapTime < 300) {
+          camera.position.set(0, 1.5, 7.5);
+          anatomyGroup.rotation.set(0, 0, 0);
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+
+        const rect = container.getBoundingClientRect();
+        pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const interactableMeshes: THREE.Object3D[] = [];
+        meshMapRef.current.forEach((obj) => interactableMeshes.push(obj));
+        const intersects = raycaster.intersectObjects(interactableMeshes, true);
+
+        if (intersects.length > 0) {
+          let topObj = intersects[0].object;
+          while (topObj.parent && topObj.parent !== anatomyGroup && !topObj.userData.structureId) {
+            topObj = topObj.parent;
+          }
+          const structId = topObj.userData?.structureId;
+          if (structId) {
+            onSelectStructure(structId);
+          }
+        }
+      }
     };
 
     const handleClick = (e: MouseEvent) => {
-      const rect = container.getBoundingClientRect();
-      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(pointer, camera);
-      const interactableMeshes: THREE.Object3D[] = [];
-      meshMapRef.current.forEach((obj) => interactableMeshes.push(obj));
-      const intersects = raycaster.intersectObjects(interactableMeshes, true);
-
-      if (intersects.length > 0) {
-        let topObj = intersects[0].object;
-        while (topObj.parent && topObj.parent !== anatomyGroup && !topObj.userData.structureId) {
-          topObj = topObj.parent;
-        }
-        const structId = topObj.userData?.structureId;
-        if (structId) {
-          onSelectStructure(structId);
-        }
-      }
+      // Handled in handlePointerUp for unified touch + mouse support
     };
 
     const handleWheel = (e: WheelEvent) => {

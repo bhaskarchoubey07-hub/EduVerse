@@ -24,10 +24,12 @@ import {
   Settings,
   Flame,
   Dna,
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/lib/store/auth-context";
 import { useDataStore } from "@/lib/store/data-store";
 import { getDaysUntil } from "@/lib/utils";
+import { MobileSearchModal } from "@/components/layout/MobileSearchModal";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -35,6 +37,7 @@ export function Navbar() {
   const { gamificationState } = useDataStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const daysLeft = user?.targetExamDate ? getDaysUntil(user.targetExamDate) : 130;
 
@@ -55,7 +58,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/10">
+    <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/10 pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
@@ -107,8 +110,30 @@ export function Navbar() {
           </nav>
 
           {/* Right Action Center */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Gamification Level Chip */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Global Search Button */}
+            <button
+              onClick={() => setSearchModalOpen(true)}
+              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 touch-target flex items-center justify-center transition-colors"
+              title="Search 3D Models, Chapters & Papers"
+              aria-label="Search EduVerse"
+            >
+              <Search className="w-4 h-4 text-cyan-400" />
+            </button>
+
+            {/* Mobile Gamification Level Pill */}
+            {user && (
+              <Link
+                href="/trophies"
+                className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-950/80 border border-violet-500/30 text-[11px] font-mono font-bold text-violet-300"
+                title={`Level ${gamificationState.currentLevel}: ${gamificationState.levelTitle}`}
+              >
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>Lvl {gamificationState.currentLevel}</span>
+              </Link>
+            )}
+
+            {/* Desktop Gamification Level Chip */}
             {user && (
               <Link
                 href="/trophies"
@@ -136,7 +161,7 @@ export function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-colors cursor-pointer touch-target"
                 >
                   <div className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[10px]">
                     {user.fullName.charAt(0)}
@@ -281,6 +306,12 @@ export function Navbar() {
           })}
         </div>
       )}
+
+      {/* Global Mobile Search Modal */}
+      <MobileSearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+      />
     </header>
   );
 }

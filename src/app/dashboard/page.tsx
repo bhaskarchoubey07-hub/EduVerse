@@ -62,9 +62,9 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen bg-[#070a14] bg-grid-pattern flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-28 lg:pb-8">
         {/* TOP WELCOME & GOAL STRIP */}
-        <div className="rounded-3xl glass-panel-glow p-6 sm:p-8 border border-white/10 relative overflow-hidden">
+        <div className="rounded-3xl glass-panel-glow p-5 sm:p-8 border border-white/10 relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -88,26 +88,26 @@ export default function StudentDashboardPage() {
             </div>
 
             {/* Quick Stats Badges */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <div className="grid grid-cols-3 sm:flex items-center gap-2.5 sm:gap-4 w-full md:w-auto">
               {/* Exam Countdown */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/30 text-center min-w-[100px]">
-                <div className="text-2xl font-black text-amber-400 font-mono">{daysLeft}</div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Days Left</div>
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-amber-500/30 text-center min-w-0 sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono">{daysLeft}</div>
+                <div className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400">Days Left</div>
               </div>
 
               {/* Daily Streak */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-rose-500/30 text-center min-w-[100px]">
-                <div className="text-2xl font-black text-rose-400 font-mono flex items-center justify-center gap-1">
-                  <Flame className="w-5 h-5 text-rose-500" />
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-rose-500/30 text-center min-w-0 sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl font-black text-rose-400 font-mono flex items-center justify-center gap-1">
+                  <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
                   {user?.streakDays || 7}
                 </div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Day Streak</div>
+                <div className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400">Day Streak</div>
               </div>
 
               {/* Total XP */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-cyan-500/30 text-center min-w-[100px]">
-                <div className="text-2xl font-black text-cyan-400 font-mono">{gamificationState.currentXp}</div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Total XP</div>
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-cyan-500/30 text-center min-w-0 sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl font-black text-cyan-400 font-mono">{gamificationState.currentXp}</div>
+                <div className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400">Total XP</div>
               </div>
             </div>
           </div>
