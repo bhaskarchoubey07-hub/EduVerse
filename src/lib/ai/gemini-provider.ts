@@ -13,7 +13,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    this.model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    this.model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
   }
 
   public get isAvailable(): boolean {

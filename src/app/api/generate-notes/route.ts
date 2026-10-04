@@ -5,6 +5,7 @@ export async function POST(req: NextRequest) {
     const { chapterTitle, subjectName, depth = "standard", board = "cbse" } = await req.json();
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
     if (apiKey) {
       try {
@@ -17,7 +18,7 @@ Format the output with markdown:
 5. 3 Important Previous-Year Questions with Model Answers`;
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
