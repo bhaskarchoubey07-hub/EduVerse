@@ -318,3 +318,136 @@ export interface UserSettings {
   dailyGoalHours: number;
   gamificationVisible: boolean;
 }
+
+// ==========================================
+// STAGE 3B 3D LEARNING UNIVERSE SCHEMAS
+// ==========================================
+
+export type SubjectWorldId =
+  | "biology"
+  | "chemistry"
+  | "physics"
+  | "mathematics"
+  | "geography"
+  | "history"
+  | "english"
+  | "computer_science";
+
+export interface SubjectWorldPortal {
+  id: SubjectWorldId;
+  name: string;
+  tagline: string;
+  description: string;
+  themeColor: "emerald" | "cyan" | "violet" | "amber" | "blue" | "rose" | "teal" | "indigo";
+  iconName: string;
+  progressPct: number;
+  currentChapter: string;
+  recommendedLesson: string;
+  mockExamCount: number;
+  xpEarned: number;
+  lessonsCompleted: number;
+  totalLessons: number;
+  primaryFormulaOrFact: string;
+  route: string;
+  modelType: "lab" | "molecules" | "orbital" | "geometry" | "earth" | "timeline" | "cyber" | "literature";
+}
+
+export interface LearningPathNode {
+  id: string;
+  subjectId: SubjectWorldId;
+  chapterId: string;
+  title: string;
+  status: "completed" | "current" | "recommended" | "locked";
+  marksWeightage: number;
+  order: number;
+  description: string;
+  estimatedMinutes: number;
+  iconName?: string;
+  has3DModel: boolean;
+}
+
+export interface RevisionItem {
+  id: string;
+  title: string;
+  subjectId: SubjectWorldId;
+  chapterId: string;
+  objectName: string;
+  systemOrBranch: string;
+  modelType: string;
+  formulaOrSummary: string;
+  examTip: string;
+  dateSaved: string;
+  nextReviewDate: string;
+  intervalDays: number;
+  easeFactor: number;
+  repetitionCount: number;
+  lastGrade?: "easy" | "medium" | "hard";
+  samplePyqId?: string;
+  pyqSnippet?: {
+    year: number;
+    board: string;
+    marks: number;
+    question: string;
+  };
+}
+
+export interface DailyMission {
+  id: string;
+  title: string;
+  description: string;
+  category: "3d_explore" | "pyq_practice" | "weak_topic_revision" | "quiz_mastery";
+  xpReward: number;
+  isCompleted: boolean;
+  progress: number;
+  maxProgress: number;
+  targetSubject: SubjectWorldId;
+  targetTopic: string;
+  actionUrl: string;
+}
+
+export interface Interactive3DLessonStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  focusObjectId: string;
+  cameraTarget?: { x: number; y: number; z: number };
+  telemetry?: Record<string, string | number>;
+  actionPrompt: string;
+  keyTakeaway: string;
+}
+
+export interface Interactive3DLesson {
+  id: string;
+  subjectId: SubjectWorldId;
+  title: string;
+  subtitle: string;
+  estimatedMinutes: number;
+  xpReward: number;
+  steps: Interactive3DLessonStep[];
+  quizQuestion: {
+    question: string;
+    targetObjectId: string;
+    options: { id: string; text: string; isCorrect: boolean }[];
+    hint: string;
+    explanation: string;
+  };
+}
+
+export interface ThreeDModelMetadata {
+  id: string;
+  title: string;
+  subject: SubjectWorldId;
+  classLevel: ClassLevel;
+  boardId: string;
+  chapterId: string;
+  topic: string;
+  modelUrl: string;
+  thumbnail?: string;
+  description: string;
+  difficulty: "foundation" | "intermediate" | "advanced";
+  examRelevance: string;
+  tags: string[];
+  license: string;
+  creator: string;
+  source: string;
+}

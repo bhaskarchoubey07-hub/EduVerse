@@ -32,27 +32,27 @@ export default function SubjectWorldsHubPage() {
       icon: Atom,
       color: "cyan",
       formula: "Bond Angle (CH₄): 109.5° • Tetrahedral Sp³",
-      route: "/worlds/chemistry",
+      route: "/learn/chemistry",
     },
     {
       id: "physics_orbital",
-      subjectName: "Physics Orbital & Optics Lab",
-      curriculum: "Class 10 & 12 • Gravitation, Light & Planetary Dynamics",
-      description: "Simulate gravitational central forces, Kepler's orbital velocity, and refraction ray paths through optical triangular glass prisms.",
+      subjectName: "Physics Simulation Lab",
+      curriculum: "Class 10 & 12 • Gravitation, Light & Projectile Motion",
+      description: "Launch projectile trajectories with live sliders, simulate prism refraction via Snell's law, and explore gravitational orbital velocities.",
       icon: Zap,
       color: "violet",
-      formula: "F = G(m₁m₂)/r² • Snell's Law n = sin(i)/sin(r)",
-      route: "/worlds/physics",
+      formula: "F = G(m₁m₂)/r² • Snell's Law n₁ sin i = n₂ sin r",
+      route: "/learn/physics",
     },
     {
       id: "geometry",
-      subjectName: "Mathematics Spatial Geometry",
-      curriculum: "Class 10 & 12 • 3D Mensuration & Platonic Solids",
-      description: "Inspect 3D Icosahedrons, Dodecahedrons, and vector coordinate systems with interactive vertices, wireframes, and volume equations.",
+      subjectName: "Mathematics 3D Geometry Lab",
+      curriculum: "Class 10 & 12 • 3D Mensuration & Coordinate Geometry",
+      description: "Morph cylinders, cones, spheres, and pyramids with real-time dimension sliders. See volume & surface area calculations update live.",
       icon: Calculator,
       color: "blue",
-      formula: "Euler's Formula: V - E + F = 2",
-      route: "/worlds/mathematics",
+      formula: "Euler's Formula: V - E + F = 2 • V = πr²h",
+      route: "/learn/mathematics",
     },
     {
       id: "biology_helix",
@@ -62,7 +62,7 @@ export default function SubjectWorldsHubPage() {
       icon: Dna,
       color: "emerald",
       formula: "Chargaff's Rule: [A] = [T], [G] = [C]",
-      route: "/worlds/biology",
+      route: "/learn/biology",
     },
   ];
 
@@ -162,67 +162,49 @@ export default function SubjectWorldsHubPage() {
         {/* BOTTOM LEARNING JUMP TILES */}
         <div className="pt-4 border-t border-white/10">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-4">
-            Curriculum Aligned 3D Topic Modules:
+            All 3D Subject Worlds:
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link
-              href="/notes/ch-sci10-01"
-              className="p-4 rounded-xl glass-panel hover:border-cyan-400/50 transition-all space-y-2 group"
-            >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link href="/learn/chemistry" className="p-4 rounded-xl glass-panel hover:border-cyan-400/50 transition-all space-y-2 group">
               <div className="text-[10px] font-mono text-cyan-400 font-bold">CHEMISTRY</div>
-              <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
-                Chemical Reactions &amp; Molecular Bonds
-              </h4>
-              <p className="text-[11px] text-slate-400">Balancing redox and exothermic bonding.</p>
-              <span className="text-[11px] text-cyan-400 font-semibold inline-flex items-center gap-1">
-                Open Chapter Notes <ArrowRight className="w-3 h-3" />
-              </span>
+              <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">Chemical Bonding &amp; 3D Molecules</h4>
+              <p className="text-[11px] text-slate-400">H\u2082O, CO\u2082, CH\u2084, NH\u2083 \u2014 rotate live 3D structures.</p>
+              <span className="text-[11px] text-cyan-400 font-semibold inline-flex items-center gap-1">Launch Lab <ArrowRight className="w-3 h-3" /></span>
             </Link>
-
-            <Link
-              href="/notes/ch-sci10-09"
-              className="p-4 rounded-xl glass-panel hover:border-violet-400/50 transition-all space-y-2 group"
-            >
+            <Link href="/learn/physics" className="p-4 rounded-xl glass-panel hover:border-violet-400/50 transition-all space-y-2 group">
               <div className="text-[10px] font-mono text-violet-400 font-bold">PHYSICS</div>
-              <h4 className="text-xs font-bold text-white group-hover:text-violet-300 transition-colors">
-                Light Refraction &amp; Spherical Mirrors
-              </h4>
-              <p className="text-[11px] text-slate-400">Ray diagram mechanics and lens equations.</p>
-              <span className="text-[11px] text-violet-400 font-semibold inline-flex items-center gap-1">
-                Open Chapter Notes <ArrowRight className="w-3 h-3" />
-              </span>
+              <h4 className="text-xs font-bold text-white group-hover:text-violet-300 transition-colors">Projectile Motion &amp; Light Refraction</h4>
+              <p className="text-[11px] text-slate-400">Live sliders, prism simulation, gravitational orbits.</p>
+              <span className="text-[11px] text-violet-400 font-semibold inline-flex items-center gap-1">Launch Lab <ArrowRight className="w-3 h-3" /></span>
             </Link>
-
-            <Link
-              href="/tutor?prompt=Explain%20Platonic%20solids%20and%20Euler%20formula%20in%203D%20geometry"
-              className="p-4 rounded-xl glass-panel hover:border-amber-400/50 transition-all space-y-2 group"
-            >
+            <Link href="/learn/mathematics" className="p-4 rounded-xl glass-panel hover:border-amber-400/50 transition-all space-y-2 group">
               <div className="text-[10px] font-mono text-amber-400 font-bold">MATHEMATICS</div>
-              <h4 className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
-                3D Mensuration &amp; Coordinate Geometry
-              </h4>
-              <p className="text-[11px] text-slate-400">Surface areas and polyhedral relations.</p>
-              <span className="text-[11px] text-amber-400 font-semibold inline-flex items-center gap-1">
-                Ask AI Tutor <ArrowRight className="w-3 h-3" />
-              </span>
+              <h4 className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">3D Mensuration &amp; Geometry</h4>
+              <p className="text-[11px] text-slate-400">Cylinders, cones, spheres \u2014 drag sliders for live calculations.</p>
+              <span className="text-[11px] text-amber-400 font-semibold inline-flex items-center gap-1">Launch Lab <ArrowRight className="w-3 h-3" /></span>
             </Link>
-
-            <Link
-              href="/tutor?prompt=Explain%20DNA%20double%20helix%20structure%20and%20base%20pairs%20for%20board%20exams"
-              className="p-4 rounded-xl glass-panel hover:border-emerald-400/50 transition-all space-y-2 group"
-            >
+            <Link href="/learn/biology" className="p-4 rounded-xl glass-panel hover:border-emerald-400/50 transition-all space-y-2 group">
               <div className="text-[10px] font-mono text-emerald-400 font-bold">BIOLOGY</div>
-              <h4 className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
-                DNA Double Helix &amp; Cell Genetics
-              </h4>
-              <p className="text-[11px] text-slate-400">Nucleotide pairing and gene replication.</p>
-              <span className="text-[11px] text-emerald-400 font-semibold inline-flex items-center gap-1">
-                Ask AI Tutor <ArrowRight className="w-3 h-3" />
-              </span>
+              <h4 className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">Human Anatomy &amp; Cell Biology</h4>
+              <p className="text-[11px] text-slate-400">9 body systems, cardiac simulation, microscopic cells.</p>
+              <span className="text-[11px] text-emerald-400 font-semibold inline-flex items-center gap-1">Launch Flagship Lab <ArrowRight className="w-3 h-3" /></span>
+            </Link>
+            <Link href="/learn/geography" className="p-4 rounded-xl glass-panel hover:border-teal-400/50 transition-all space-y-2 group">
+              <div className="text-[10px] font-mono text-teal-400 font-bold">GEOGRAPHY</div>
+              <h4 className="text-xs font-bold text-white group-hover:text-teal-300 transition-colors">Earth Structure &amp; Plate Tectonics</h4>
+              <p className="text-[11px] text-slate-400">Earth layers, atmosphere, plate boundaries, river systems.</p>
+              <span className="text-[11px] text-teal-400 font-semibold inline-flex items-center gap-1">Launch Lab <ArrowRight className="w-3 h-3" /></span>
+            </Link>
+            <Link href="/learn/history" className="p-4 rounded-xl glass-panel hover:border-orange-400/50 transition-all space-y-2 group">
+              <div className="text-[10px] font-mono text-orange-400 font-bold">HISTORY</div>
+              <h4 className="text-xs font-bold text-white group-hover:text-orange-300 transition-colors">Indian History Interactive Timeline</h4>
+              <p className="text-[11px] text-slate-400">Indus Valley to Republic \u2014 key facts, quizzes, AI tutor.</p>
+              <span className="text-[11px] text-orange-400 font-semibold inline-flex items-center gap-1">Launch Lab <ArrowRight className="w-3 h-3" /></span>
             </Link>
           </div>
         </div>
+
       </main>
 
       <Footer />

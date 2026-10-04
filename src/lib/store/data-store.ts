@@ -14,6 +14,9 @@ import {
   StudentGamificationState,
   UserSettings,
   Flashcard,
+  RevisionItem,
+  DailyMission,
+  SubjectWorldId,
 } from "@/types";
 import {
   QUESTION_PAPERS,
@@ -25,6 +28,10 @@ import {
   DEFAULT_USER_SETTINGS,
   FLASHCARDS,
 } from "@/lib/data/mock-db";
+import {
+  INITIAL_DAILY_MISSIONS,
+  INITIAL_SAVED_REVISIONS,
+} from "@/lib/data/universe-data";
 
 const ATTEMPTS_KEY = "eduverse_exam_attempts";
 const BOOKMARKS_KEY = "eduverse_bookmarked_papers";
@@ -36,6 +43,9 @@ const TASKS_KEY = "eduverse_study_tasks";
 const ACHIEVEMENTS_KEY = "eduverse_achievements";
 const SETTINGS_KEY = "eduverse_user_settings";
 const FLASHCARDS_KEY = "eduverse_flashcards_queue";
+const REVISIONS_KEY = "eduverse_saved_revisions";
+const MISSIONS_KEY = "eduverse_daily_missions";
+const COMPLETED_3D_LESSONS_KEY = "eduverse_completed_3d_lessons";
 
 // Default seed exam attempt for rich initial charts
 const INITIAL_ATTEMPTS: ExamAttempt[] = [
@@ -123,10 +133,39 @@ export function useDataStore() {
   const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
   const [userSettings, setUserSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [flashcardDeck, setFlashcardDeck] = useState<Flashcard[]>(FLASHCARDS);
+  const [savedRevisions, setSavedRevisions] = useState<RevisionItem[]>(INITIAL_SAVED_REVISIONS);
+  const [dailyMissions, setDailyMissions] = useState<DailyMission[]>(INITIAL_DAILY_MISSIONS);
+  const [completedLessons3D, setCompletedLessons3D] = useState<string[]>(["lesson-bio-cardiac-flow"]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     try {
+      // Revisions
+      const storedRevisions = localStorage.getItem(REVISIONS_KEY);
+      if (storedRevisions) {
+        setSavedRevisions(JSON.parse(storedRevisions));
+      } else {
+        setSavedRevisions(INITIAL_SAVED_REVISIONS);
+        localStorage.setItem(REVISIONS_KEY, JSON.stringify(INITIAL_SAVED_REVISIONS));
+      }
+
+      // Daily Missions
+      const storedMissions = localStorage.getItem(MISSIONS_KEY);
+      if (storedMissions) {
+        setDailyMissions(JSON.parse(storedMissions));
+      } else {
+        setDailyMissions(INITIAL_DAILY_MISSIONS);
+        localStorage.setItem(MISSIONS_KEY, JSON.stringify(INITIAL_DAILY_MISSIONS));
+      }
+
+      // Completed 3D Lessons
+      const stored3DLessons = localStorage.getItem(COMPLETED_3D_LESSONS_KEY);
+      if (stored3DLessons) {
+        setCompletedLessons3D(JSON.parse(stored3DLessons));
+      } else {
+        setCompletedLessons3D(["lesson-bio-cardiac-flow"]);
+        localStorage.setItem(COMPLETED_3D_LESSONS_KEY, JSON.stringify(["lesson-bio-cardiac-flow"]));
+      }
       // Attempts
       const storedAttempts = localStorage.getItem(ATTEMPTS_KEY);
       if (storedAttempts) {
@@ -416,6 +455,89 @@ export function useDataStore() {
     });
   };
 
+  // Stage 3B Revision, Mission and 3D Lesson Actions
+  const saveForRevision = (item: Omit<RevisionItem, "id" | "dateSaved" | "nextReviewDate" | "intervalDays" | "easeFactor" | "repetitionCount">) => {
+    const newItem: RevisionItem = {
+      ...item,
+      id: `rev-${Date.now()}`,
+      dateSaved: new Date().toISOString(),
+      nextReviewDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+      intervalDays: 1,
+      easeFactor: 2.5,
+      repetitionCount: 0,
+      lastGrade: "medium",
+    };
+    setSavedRevisions(prev => {
+      const updated = [newItem, ...prev.filter(r => r.objectName !== item.objectName)];
+      localStorage.setItem(REVISIONS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+    return newItem;
+  };
+
+  const updateRevisionSchedule = (itemId: string, grade: "easy" | "medium" | "hard") => {
+    setSavedRevisions(prev => {
+      const updated = prev.map(item => {
+        if (item.id !== itemId) return item;
+
+        let ease = item.easeFactor || 2.5;
+        let interval = item.intervalDays || 1;
+        const rep = (item.repetitionCount || 0) + 1;
+
+        if (grade === "hard") {
+          ease = Math.max(1.3, ease - 0.2);
+          interval = 1;
+        } else if (grade === "medium") {
+          interval = Math.round(interval * ease);
+        } else if (grade === "easy") {
+          ease += 0.15;
+          interval = Math.round(interval * ease * 1.4);
+        }
+
+        const nextDate = new Date(Date.now() + interval * 86400000).toISOString().split("T")[0];
+
+        return {
+          ...item,
+          easeFactor: ease,
+          intervalDays: interval,
+          repetitionCount: rep,
+          lastGrade: grade,
+          nextReviewDate: nextDate,
+        };
+      });
+
+      localStorage.setItem(REVISIONS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const deleteRevisionItem = (itemId: string) => {
+    setSavedRevisions(prev => {
+      const updated = prev.filter(r => r.id !== itemId);
+      localStorage.setItem(REVISIONS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const completeDailyMission = (missionId: string) => {
+    setDailyMissions(prev => {
+      const updated = prev.map(m =>
+        m.id === missionId ? { ...m, isCompleted: true, progress: m.maxProgress } : m
+      );
+      localStorage.setItem(MISSIONS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const recordCompleted3DLesson = (lessonId: string) => {
+    setCompletedLessons3D(prev => {
+      if (prev.includes(lessonId)) return prev;
+      const updated = [...prev, lessonId];
+      localStorage.setItem(COMPLETED_3D_LESSONS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return {
     isReady,
     attempts,
@@ -428,6 +550,9 @@ export function useDataStore() {
     gamificationState,
     userSettings,
     flashcardDeck,
+    savedRevisions,
+    dailyMissions,
+    completedLessons3D,
     saveAttempt,
     toggleBookmark,
     saveNote,
@@ -441,5 +566,10 @@ export function useDataStore() {
     addCustomPaper,
     addCustomExam,
     getSubjectProgressList,
+    saveForRevision,
+    updateRevisionSchedule,
+    deleteRevisionItem,
+    completeDailyMission,
+    recordCompleted3DLesson,
   };
 }
