@@ -12,27 +12,50 @@ export class AIContextRetriever {
    * Retrieves syllabus nodes, formulas, misconceptions, and PYQs matching student query
    */
   public static enrichContext(context: EducationalContext, userQuery: string): EducationalContext {
-    const qLower = userQuery.toLowerCase();
+    const qLower = (userQuery || "").toLowerCase();
     
-    // Find matching chapter in verified curriculum
+    // 1. High-priority query-based match across definitions, topics, key points, and chapter titles
     let matchedChapter = EXPANDED_CHAPTERS_REGISTRY.find((c) => {
-      if (context.chapter && c.title.toLowerCase().includes(context.chapter.toLowerCase())) return true;
-      if (c.topics.some((t) => qLower.includes(t.title.toLowerCase()))) return true;
-      if (c.definitions.some((d) => qLower.includes(d.term.toLowerCase()))) return true;
+      // Check definitions
+      if (c.definitions && c.definitions.some((d) => 
+        qLower.includes(d.term.toLowerCase()) || d.term.toLowerCase().split(" ").some(w => w.length > 3 && qLower.includes(w))
+      )) return true;
+
+      // Check topics and key points
+      if (c.topics && c.topics.some((t) => 
+        qLower.includes(t.title.toLowerCase()) || 
+        t.title.toLowerCase().split(" ").some(w => w.length > 4 && qLower.includes(w)) ||
+        t.keyPoints.some((kp) => kp.toLowerCase().split(" ").some(w => w.length > 5 && qLower.includes(w)))
+      )) return true;
+
+      // Check chapter title
+      if (qLower.includes(c.title.toLowerCase())) return true;
       return false;
     });
 
+    // 2. If no direct topic match, match by explicitly requested chapter (if not "General")
+    const requestedChapter = context.chapter;
+    if (!matchedChapter && requestedChapter && requestedChapter.toLowerCase() !== "general") {
+      matchedChapter = EXPANDED_CHAPTERS_REGISTRY.find(
+        (c) => c.title.toLowerCase().includes(requestedChapter.toLowerCase()) ||
+               requestedChapter.toLowerCase().includes(c.title.toLowerCase())
+      );
+    }
+
+    // 3. Fallback to subject-based chapter
     if (!matchedChapter) {
       matchedChapter = EXPANDED_CHAPTERS_REGISTRY.find(
-        (c) => c.subjectId.toLowerCase().includes(context.subject.toLowerCase())
+        (c) => c.subjectId.toLowerCase().includes((context.subject || "").toLowerCase())
       ) || EXPANDED_CHAPTERS_REGISTRY[0];
     }
 
     // Build verified syllabus grounding summary
     const definitionsText = matchedChapter.definitions
-      .slice(0, 3)
-      .map((d) => `• ${d.term}: ${d.definition}`)
-      .join("\n");
+      ? matchedChapter.definitions
+          .slice(0, 4)
+          .map((d) => `• ${d.term}: ${d.definition}`)
+          .join("\n")
+      : "";
 
     const formulaText = matchedChapter.formulas
       ? matchedChapter.formulas.map((f) => `• ${f.name}: ${f.formulaLatex}`).join("\n")
@@ -46,16 +69,13 @@ export class AIContextRetriever {
       : "";
 
     const syllabusSummary = `
-[OFFICIAL SYLLABUS: ${matchedChapter.boardCode.toUpperCase()} Class ${matchedChapter.classLevel} - Chapter ${matchedChapter.chapterNumber}: ${matchedChapter.title}]
+[VERIFIED SYLLABUS REFERENCE: ${matchedChapter.boardCode.toUpperCase()} Class ${matchedChapter.classLevel} - Chapter ${matchedChapter.chapterNumber}: ${matchedChapter.title}]
 Weightage: ${matchedChapter.marksWeightage} Marks
 
 CORE DEFINITIONS:
-${definitionsText}
+${definitionsText || "Standard NCERT concepts."}
 
-${formulaText ? `KEY FORMULAS:\n${formulaText}` : ""}
-
-EXAM PITFALLS:
-${misconceptionsText}
+${formulaText ? `KEY FORMULAS:\n${formulaText}\n` : ""}${misconceptionsText ? `EXAM PITFALLS:\n${misconceptionsText}` : ""}
 `.trim();
 
     // Find relevant genuine PYQs
@@ -68,14 +88,14 @@ ${misconceptionsText}
           .slice(0, 2)
           .map(
             (p) =>
-              `[Year ${p.year} Board Exam, ${p.marks}M]: "${p.questionText}" -> Solution: ${p.officialAnswerKey?.slice(0, 160)}...`
+              `[Year ${p.year} Board Exam, ${p.marks}M]: "${p.questionText}" -> Official Answer Key: ${p.officialAnswerKey?.slice(0, 160)}...`
           )
           .join("\n\n")
-      : "No verified PYQ mapped for this subtopic.";
+      : "Standard Board marking rubrics apply.";
 
     return {
       ...context,
-      chapter: matchedChapter.title,
+      chapter: context.chapter && context.chapter !== "General" ? context.chapter : matchedChapter.title,
       verifiedSyllabusSummary: syllabusSummary,
       recentPYQSample: pyqExcerpts,
     };
@@ -86,26 +106,26 @@ ${misconceptionsText}
    */
   public static buildSystemPrompt(context: EducationalContext, mode: string): string {
     return `
-You are EduVerse AI Tutor, an empathetic, highly structured, syllabus-grounded teacher preparing Indian students for ${context.board.toUpperCase()} Class ${context.classLevel} Board Examinations.
-Subject: ${context.subject}
-${context.chapter ? `Current Chapter: ${context.chapter}` : ""}
-${context.current3DObject ? `Interactive 3D Visual Context: ${context.current3DObject}` : ""}
+You are EduVerse AI Tutor, an empathetic, encouraging, and syllabus-grounded master educator preparing Indian students for their ${context.board.toUpperCase()} Class ${context.classLevel} Board Examinations.
+Target Subject: ${context.subject || "Academic"}
+${context.chapter ? `Current Chapter/Topic Focus: ${context.chapter}` : ""}
+${context.current3DObject ? `Interactive 3D Visual in View: ${context.current3DObject}` : ""}
 Teaching Mode: "${mode}"
 
-STRICT PEDAGOGICAL RULES:
-1. ALWAYS ground your answers in the official curriculum below.
-2. Clearly label explanations: "[AI-GENERATED STUDY EXPLANATION - GROUNDED IN OFFICIAL SYLLABUS]".
-3. Keep answers concise, exam-oriented, and high-scoring. Use bullet points and bold keywords.
-4. Format mathematical and chemical formulas using LaTeX notation (e.g. $V = IR$, $\\text{H}_2\\text{O}$).
-5. If the mode is "hint_first", give an intuitive mental clue without solving the full question immediately.
-6. If the mode is "step_by_step", break calculations into numbered steps with marks allocation advice.
-7. NEVER invent historical examination papers or fake exam statistics. If something is unknown, say: "I couldn't find this in the verified EduVerse syllabus."
-8. End your response with 2-3 relevant follow-up questions to test understanding.
+PEDAGOGICAL TEACHING GUIDELINES:
+1. Always answer the student's question accurately, clearly, and enthusiastically at the appropriate level for ${context.board.toUpperCase()} Class ${context.classLevel}.
+2. Whenever verified syllabus definitions, formulas, or PYQs are provided in the reference section below, prioritize and incorporate them into your response.
+3. If the student asks about a concept not covered in the provided chapter excerpt, provide a complete, scientifically accurate explanation suitable for their board curriculum. Never refuse to explain an academic topic.
+4. Structure your response cleanly with markdown headings, bullet points, bold keywords, and concise explanations.
+5. Format mathematical equations and chemical formulas using LaTeX or clear notation (e.g., $V = IR$, $6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\to \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$).
+6. If the teaching mode is "hint_first", provide a smart clue/intuition to help the student think before revealing the full answer.
+7. If the teaching mode is "step_by_step", break down the derivation/calculation into numbered steps with marking scheme tips.
+8. End your response with 2-3 engaging, relevant follow-up questions to test the student's mastery.
 
-VERIFIED SYLLABUS CONTEXT:
+VERIFIED REFERENCE CURRICULUM:
 ${context.verifiedSyllabusSummary || "Standard NCERT curriculum benchmarks."}
 
-GENUINE PREVIOUS-YEAR BOARD EXAM PATTERNS:
+GENUINE PREVIOUS-YEAR BOARD EXAM EXCERPTS:
 ${context.recentPYQSample || "Refer to standard Board marking rubrics."}
 `.trim();
   }
