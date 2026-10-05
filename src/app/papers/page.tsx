@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import {
@@ -30,8 +31,10 @@ import { useDataStore } from "@/lib/store/data-store";
 import { BOARDS, SUBJECTS } from "@/lib/data/mock-db";
 import { QuestionPaper, ClassLevel, PaperType } from "@/types";
 import { CBSE_10_SCIENCE_PAPERS_ARCHIVE } from "@/lib/data/cbse-10-science-pilot";
+import { DualViewPaperViewer } from "@/components/papers/DualViewPaperViewer";
 
 export default function PapersLibraryPage() {
+  const router = useRouter();
   const { allPapers, bookmarks, toggleBookmark } = useDataStore();
 
   const [selectedBoard, setSelectedBoard] = useState<string>("all");
@@ -456,180 +459,19 @@ export default function PapersLibraryPage() {
           )}
         </div>
 
-        {/* IN-APP HIGH-FIDELITY PAPER VIEWER MODAL (With Zoom Controls & Official Source Link) */}
+        {/* DUAL-VIEW HIGH-FIDELITY PAPER VIEWER (Section 12 & 13) */}
         {activePreviewPaper && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
-            <div className="bg-[#0b1022] border border-white/15 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-              {/* Modal Header */}
-              <div className="p-4 sm:p-5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-slate-900/80">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">
-                      {activePreviewPaper.year} Official Board Paper
-                    </span>
-                    <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Verified Blueprint
-                    </span>
-                  </div>
-                  <h3 className="text-sm sm:text-base font-bold text-white">{activePreviewPaper.title}</h3>
-                </div>
-
-                {/* Controls: Zoom, Solutions Toggle, Download, Close */}
-                <div className="flex items-center gap-2">
-                  {/* Zoom Controls */}
-                  <div className="flex items-center bg-slate-950 rounded-lg p-1 border border-white/10">
-                    <button
-                      onClick={() => setZoomLevel((z) => Math.max(75, z - 15))}
-                      className="p-1 hover:text-cyan-400 text-slate-400"
-                      title="Zoom Out"
-                    >
-                      <ZoomOut className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[10px] font-mono px-1 text-slate-300">{zoomLevel}%</span>
-                    <button
-                      onClick={() => setZoomLevel((z) => Math.min(150, z + 15))}
-                      className="p-1 hover:text-cyan-400 text-slate-400"
-                      title="Zoom In"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setZoomLevel(100)}
-                      className="p-1 hover:text-cyan-400 text-slate-400"
-                      title="Reset Zoom"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => setShowOfficialSolutions(!showOfficialSolutions)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      showOfficialSolutions
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                        : "bg-white/10 text-slate-300"
-                    }`}
-                  >
-                    {showOfficialSolutions ? "Solutions ON" : "Solutions OFF"}
-                  </button>
-
-                  <button
-                    onClick={() => handleDownload(activePreviewPaper)}
-                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white"
-                    title="Download"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => setActivePreviewPaper(null)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Paper Content (Responsive Zoom scale) */}
-              <div
-                className="flex-1 overflow-y-auto p-6 space-y-6 text-slate-200 transition-all origin-top"
-                style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "top left", width: `${(100 / zoomLevel) * 100}%` }}
-              >
-                {/* General Instructions Box */}
-                <div className="p-4 rounded-xl bg-slate-950/80 border border-white/10 text-xs space-y-2">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    Official Examination Instructions:
-                  </h4>
-                  <ul className="list-disc list-inside space-y-1 text-slate-400">
-                    <li>Time Allowed: {activePreviewPaper.durationMinutes} Minutes. Maximum Marks: {activePreviewPaper.totalMarks}.</li>
-                    <li>This question paper contains multiple sections. All questions are compulsory.</li>
-                    <li>Section A comprises objective questions of 1 mark each.</li>
-                    <li>Calculators and electronic devices are strictly not permitted.</li>
-                  </ul>
-                </div>
-
-                {/* Sections and Questions */}
-                {activePreviewPaper.sections && activePreviewPaper.sections.length > 0 ? (
-                  activePreviewPaper.sections.map((section, sIdx) => (
-                    <div key={sIdx} className="space-y-4">
-                      <div className="p-2.5 rounded-lg bg-violet-950/40 border border-violet-500/20 text-xs font-bold text-violet-300 flex items-center justify-between">
-                        <span>{section.name}: {section.title}</span>
-                        <span className="font-mono text-[11px] text-slate-400">{section.description}</span>
-                      </div>
-
-                      <div className="space-y-4">
-                        {section.questions.map((q) => (
-                          <div
-                            key={q.id}
-                            className="p-4 rounded-xl bg-slate-900/60 border border-white/10 space-y-3"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <span className="font-bold text-xs text-white">
-                                Q{q.questionNumber}. {q.text}
-                              </span>
-                              <span className="text-[11px] font-mono font-bold text-cyan-400 shrink-0">
-                                [{q.marks} Mark{q.marks > 1 ? "s" : ""}]
-                              </span>
-                            </div>
-
-                            {/* Options if MCQ */}
-                            {q.options && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                {q.options.map((opt) => (
-                                  <div
-                                    key={opt.id}
-                                    className={`p-2.5 rounded-lg border ${
-                                      showOfficialSolutions && opt.isCorrect
-                                        ? "bg-emerald-950/50 border-emerald-500/50 text-emerald-200 font-semibold"
-                                        : "bg-slate-950/40 border-white/5 text-slate-300"
-                                    }`}
-                                  >
-                                    <span className="font-bold mr-2">({opt.label})</span>
-                                    {opt.text}
-                                    {showOfficialSolutions && opt.isCorrect && (
-                                      <span className="ml-2 text-[10px] text-emerald-400">✓ Correct</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Step-by-Step Marking & Solution if enabled */}
-                            {showOfficialSolutions && (
-                              <div className="p-3 rounded-lg bg-slate-950/90 border border-emerald-500/20 space-y-1.5 text-xs">
-                                <span className="font-bold text-emerald-400 flex items-center gap-1 text-[11px]">
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> Official Marking Scheme &amp; Explanation:
-                                </span>
-                                <p className="text-slate-300 leading-relaxed">{q.explanation}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 rounded-xl bg-slate-900/60 text-center space-y-3">
-                    <CheckCircle2 className="w-8 h-8 text-cyan-400 mx-auto" />
-                    <h5 className="text-sm font-bold text-white">Authentic Examination Document Verified</h5>
-                    <p className="text-xs text-slate-300 max-w-lg mx-auto">
-                      All individual questions from this paper have been extracted and mapped to their respective chapters in the EduVerse Content Engine.
-                    </p>
-                    <div className="pt-2">
-                      <a
-                        href={(activePreviewPaper as any).officialSourceUrl || "https://www.cbse.gov.in/cbsenew/question-paper.html"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" /> Open Official Examination Document
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <DualViewPaperViewer
+            paper={activePreviewPaper}
+            onClose={() => setActivePreviewPaper(null)}
+            onAskAI={(question, paper) => {
+              router.push(
+                `/tutor?subject=${paper.subjectId}&paperId=${paper.id}&questionId=${question.id}&prompt=${encodeURIComponent(
+                  `Explain Question ${question.questionNumber}: ${question.text.slice(0, 100)}`
+                )}`
+              );
+            }}
+          />
         )}
 
         {/* Download Toast */}

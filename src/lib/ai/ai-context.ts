@@ -93,11 +93,50 @@ ${formulaText ? `KEY FORMULAS:\n${formulaText}\n` : ""}${misconceptionsText ? `E
           .join("\n\n")
       : "Standard Board marking rubrics apply.";
 
+    // 4. EXACT QUESTION GROUNDING (Sections 19, 20 & 21)
+    let questionGroundingText: string | undefined = undefined;
+    const qMatch = qLower.match(/\b(?:q|question)\s*#?(\d+)\b/i);
+
+    if (context.questionId || qMatch) {
+      const targetQNum = qMatch ? parseInt(qMatch[1], 10) : undefined;
+      const { QUESTION_PAPERS } = require("@/lib/data/mock-db");
+      
+      // Look across question papers
+      for (const p of QUESTION_PAPERS) {
+        if (context.paperId && p.id !== context.paperId) continue;
+        for (const sec of p.sections || []) {
+          for (const q of sec.questions || []) {
+            if ((context.questionId && q.id === context.questionId) || (targetQNum && q.questionNumber === targetQNum)) {
+              questionGroundingText = `
+[AUTHENTIC VERIFIED QUESTION: ${p.title}]
+Question Number: Q${q.questionNumber} [Marks: ${q.marks}]
+Source Page: Page ${q.sourcePageNumber || 1}
+Question Text: "${q.text}"
+${q.options ? `Options:\n${q.options.map((o: any) => `(${o.label}) ${o.text} ${o.isCorrect ? '[CORRECT]' : ''}`).join('\n')}` : ""}
+OFFICIAL ANSWER KEY: ${q.officialAnswer || q.correctAnswer || "Refer to marking rubric"}
+OFFICIAL MARKING SCHEME: ${q.markingScheme || q.explanation}
+SYLLABUS CHAPTER: ${q.chapterName || matchedChapter.title} • Topic: ${q.topicName || "Curriculum Unit"}
+`.trim();
+              break;
+            }
+          }
+          if (questionGroundingText) break;
+        }
+        if (questionGroundingText) break;
+      }
+    }
+
+    // 5. Anti-Fabrication Notice for 2021 Cancelled Exams (Section 11)
+    if (qLower.includes("2021") && (qLower.includes("paper") || qLower.includes("board exam") || qLower.includes("pyq"))) {
+      questionGroundingText = `[OFFICIAL VERIFIED RECORD: CBSE officially cancelled Class 10 Board Examinations in 2021 due to COVID-19 pandemic. No official board examination question paper was conducted. Tabulation was performed via internal assessment.]`;
+    }
+
     return {
       ...context,
       chapter: context.chapter && context.chapter !== "General" ? context.chapter : matchedChapter.title,
       verifiedSyllabusSummary: syllabusSummary,
       recentPYQSample: pyqExcerpts,
+      specificQuestionGrounding: questionGroundingText,
     };
   }
 
@@ -109,18 +148,27 @@ ${formulaText ? `KEY FORMULAS:\n${formulaText}\n` : ""}${misconceptionsText ? `E
 You are EduVerse AI Tutor, an empathetic, encouraging, and syllabus-grounded master educator preparing Indian students for their ${context.board.toUpperCase()} Class ${context.classLevel} Board Examinations.
 Target Subject: ${context.subject || "Academic"}
 ${context.chapter ? `Current Chapter/Topic Focus: ${context.chapter}` : ""}
+${context.bookTitle ? `Textbook in View: ${context.bookTitle} (Page ${context.bookPage || 1})` : ""}
 ${context.current3DObject ? `Interactive 3D Visual in View: ${context.current3DObject}` : ""}
 Teaching Mode: "${mode}"
 
 PEDAGOGICAL TEACHING GUIDELINES:
 1. Always answer the student's question accurately, clearly, and enthusiastically at the appropriate level for ${context.board.toUpperCase()} Class ${context.classLevel}.
 2. Whenever verified syllabus definitions, formulas, or PYQs are provided in the reference section below, prioritize and incorporate them into your response.
-3. If the student asks about a concept not covered in the provided chapter excerpt, provide a complete, scientifically accurate explanation suitable for their board curriculum. Never refuse to explain an academic topic.
+3. If an exact Question is grounded below, directly address that specific question. Distinctly label:
+   - "Official Answer Key:"
+   - "Official Marking Scheme:"
+   - "AI Conceptual Explanation:"
 4. Structure your response cleanly with markdown headings, bullet points, bold keywords, and concise explanations.
 5. Format mathematical equations and chemical formulas using LaTeX or clear notation (e.g., $V = IR$, $6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\to \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$).
 6. If the teaching mode is "hint_first", provide a smart clue/intuition to help the student think before revealing the full answer.
 7. If the teaching mode is "step_by_step", break down the derivation/calculation into numbered steps with marking scheme tips.
 8. End your response with 2-3 engaging, relevant follow-up questions to test the student's mastery.
+
+${context.specificQuestionGrounding ? `
+EXACT GROUNDED SOURCE QUESTION:
+${context.specificQuestionGrounding}
+` : ""}
 
 VERIFIED REFERENCE CURRICULUM:
 ${context.verifiedSyllabusSummary || "Standard NCERT curriculum benchmarks."}

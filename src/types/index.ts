@@ -78,6 +78,14 @@ export interface StudentProfile {
 
 export type PaperType = "official_board" | "sample_paper" | "compartment" | "pre_board";
 
+export type ContentStatus =
+  | "OFFICIAL_VERIFIED"
+  | "NEEDS_VERIFICATION"
+  | "DEMO"
+  | "AI_GENERATED_PRACTICE"
+  | "PROCESSING"
+  | "REJECTED";
+
 export interface QuestionPaper {
   id: string;
   title: string;
@@ -96,6 +104,13 @@ export interface QuestionPaper {
   sections: PaperSection[];
   tags: string[];
   yearAvailable: boolean;
+  // Provenance & Real Document Storage Fields
+  contentStatus?: ContentStatus;
+  sourceDocumentId?: string;
+  sourceUrl?: string;
+  paperCode?: string;
+  academicYear?: string;
+  checksum?: string;
 }
 
 export interface PaperSection {
@@ -134,6 +149,16 @@ export interface ExamQuestion {
   hint?: string;
   stepByStepSolution?: string[];
   rubricCriteria?: { criteria: string; marks: number }[];
+  // Provenance & Real Document Fields
+  contentStatus?: ContentStatus;
+  sourceDocumentId?: string;
+  sourcePageNumber?: number;
+  officialAnswer?: string;
+  markingScheme?: string;
+  aiExplanation?: string;
+  related3DModelId?: string;
+  chapterName?: string;
+  topicName?: string;
 }
 
 export interface MockExam {

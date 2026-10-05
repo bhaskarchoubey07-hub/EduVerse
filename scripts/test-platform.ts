@@ -275,12 +275,89 @@ async function runTestSuite() {
     `Rate limiter verified with active quota: ${initialLimit.dailyLimit} messages/day (Remaining: ${initialLimit.remainingToday})`
   );
 
+  // 21. Real Question Retrieval & Grounding (Section 19 & 20)
+  const { AIContextRetriever } = await import("../src/lib/ai/ai-context");
+  const q21Context = AIContextRetriever.enrichContext(
+    {
+      board: "cbse",
+      classLevel: 10,
+      subject: "cbse-10-sci",
+    },
+    "Explain Q21 from 2025 board exam"
+  );
+  assertTest(
+    21,
+    "Exact Question Retrieval & Grounding (Q21)",
+    "Content Authenticity",
+    Boolean(q21Context.specificQuestionGrounding?.includes("Snell's law") && q21Context.specificQuestionGrounding?.includes("OFFICIAL ANSWER KEY")),
+    "Successfully retrieved verified Q21 Snell's Law with official answer key and marking scheme."
+  );
+
+  // 22. Preserved Source Page Numbering (Section 8)
+  const q34Context = AIContextRetriever.enrichContext(
+    {
+      board: "cbse",
+      classLevel: 10,
+      subject: "cbse-10-sci",
+    },
+    "Explain Q34 on double circulation"
+  );
+  assertTest(
+    22,
+    "Preserved Source Page Numbering (Source: Page 7)",
+    "Provenance & Audit",
+    Boolean(q34Context.specificQuestionGrounding?.includes("Page 7")),
+    "Verified exact document page number preserved: Page 7"
+  );
+
+  // 23. Anti-Fabrication for Cancelled 2021 Exams (Section 11)
+  const covidExamContext = AIContextRetriever.enrichContext(
+    {
+      board: "cbse",
+      classLevel: 10,
+      subject: "cbse-10-sci",
+    },
+    "Give me the 2021 CBSE Class 10 Science question paper"
+  );
+  assertTest(
+    23,
+    "Zero Fabrication Policy (2021 COVID Cancellation Notice)",
+    "Anti-Fabrication",
+    Boolean(covidExamContext.specificQuestionGrounding?.includes("cancelled Class 10 Board Examinations in 2021")),
+    "Correctly outputted official cancellation record without fabricating non-existent 2021 exam paper."
+  );
+
+  // 24. Authentic Textbook Page Bounds & Structure (Section 7)
+  const { NCERT_CLASS10_SCIENCE_BOOK } = await import("../src/lib/data/documents-registry");
+  const ch5 = NCERT_CLASS10_SCIENCE_BOOK.chapters.find((c) => c.chapterNumber === 5);
+  assertTest(
+    24,
+    "Authentic Textbook Structure (NCERT Class 10 Science Ch 5)",
+    "Textbook Ingestion",
+    Boolean(ch5 && ch5.startPage === 80 && ch5.endPage === 109 && ch5.sections.length >= 3),
+    `Verified authentic NCERT Life Processes chapter spanning Pages 80-109 with 3 structured sections.`
+  );
+
+  // 25. 3D Model Relationship Linkage (Section 37)
+  const { QUESTION_PAPERS } = await import("../src/lib/data/mock-db");
+  const pyq2025 = QUESTION_PAPERS.find((p) => p.id === "pyq-cbse10-sci-2025");
+  const qHeart = pyq2025?.sections
+    .flatMap((s) => s.questions)
+    .find((q) => q.questionNumber === 34);
+  assertTest(
+    25,
+    "Question-to-3D Model Relationship Link (Q34 -> Heart)",
+    "3D Integration",
+    qHeart?.related3DModelId === "heart",
+    "Verified Q34 Human Heart links directly to 3D Heart model."
+  );
+
   // Print Summary
   const passedCount = reports.filter((r) => r.passed).length;
   const failedCount = reports.filter((r) => !r.passed).length;
 
   console.log("\n=================================================================");
-  console.log(`AUDIT RESULTS: ${passedCount}/20 PASSED (${failedCount} FAILED)`);
+  console.log(`AUDIT RESULTS: ${passedCount}/25 PASSED (${failedCount} FAILED)`);
   console.log("=================================================================");
 
   if (failedCount > 0) {

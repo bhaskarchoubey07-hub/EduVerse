@@ -20,6 +20,11 @@ export interface EducationalContext {
   language?: string;
   verifiedSyllabusSummary?: string;
   recentPYQSample?: string;
+  paperId?: string;
+  questionId?: string;
+  specificQuestionGrounding?: string;
+  bookTitle?: string;
+  bookPage?: number;
 }
 
 export interface AIChatMessage {

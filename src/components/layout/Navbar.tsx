@@ -47,6 +47,7 @@ export function Navbar() {
     { name: "3D Biology Lab", href: "/learn/biology", icon: Dna, is3D: true },
     { name: "AI Planner", href: "/planner", icon: Calendar },
     { name: "10-Yr Papers", href: "/papers", icon: FileText },
+    { name: "Textbooks", href: "/books", icon: BookOpen },
     { name: "AI Companion", href: "/tutor", icon: Bot, isHighlight: true },
     { name: "Mock Exams", href: "/exams", icon: Clock },
     { name: "Trophies & XP", href: "/trophies", icon: Award },

@@ -275,3 +275,172 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- ==============================================================================
+-- 13. REAL EDUCATION DOCUMENT STORAGE & CONTENT INGESTION ARCHITECTURE
+-- Distinguishes ORIGINAL_SOURCE_DOCUMENT from EXTRACTED_TEXT and AI_GENERATED_CONTENT
+-- ==============================================================================
+
+-- 13.1 SOURCE DOCUMENTS TABLE (Actual stored PDFs, syllabi, books, marking schemes)
+CREATE TABLE IF NOT EXISTS public.source_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_path TEXT NOT NULL, -- e.g. "education/boards/cbse/class-10/science/question-papers/cbse-10-sci-2025.pdf"
+  file_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL DEFAULT 'application/pdf',
+  file_size BIGINT NOT NULL DEFAULT 0,
+  board TEXT NOT NULL,
+  class_level INT NOT NULL CHECK (class_level IN (10, 11, 12)),
+  subject TEXT NOT NULL,
+  academic_year TEXT NOT NULL, -- e.g. "2024-2025"
+  document_type TEXT NOT NULL CHECK (document_type IN ('book', 'syllabus', 'question_paper', 'marking_scheme', 'sample_paper', 'answer_key')),
+  source_url TEXT NOT NULL,
+  source_name TEXT NOT NULL,
+  verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED' CHECK (verification_status IN ('UNVERIFIED', 'PROCESSING', 'EXTRACTED', 'NEEDS_REVIEW', 'VERIFIED', 'REJECTED')),
+  license_status TEXT NOT NULL DEFAULT 'GOVERNMENT_OPEN_DATA',
+  checksum TEXT NOT NULL, -- SHA-256 / 32-bit checksum
+  page_count INT DEFAULT 1,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.2 QUESTION PAPERS (Metadata for actual past papers)
+CREATE TABLE IF NOT EXISTS public.question_papers (
+  id TEXT PRIMARY KEY, -- e.g. "cbse-10-sci-2025-31-1-1"
+  board TEXT NOT NULL,
+  class_level INT NOT NULL CHECK (class_level IN (10, 11, 12)),
+  subject TEXT NOT NULL,
+  academic_year TEXT NOT NULL,
+  exam_year INT NOT NULL,
+  exam_type TEXT NOT NULL DEFAULT 'Board Examination',
+  paper_code TEXT NOT NULL, -- e.g. "31/1/1"
+  set_code TEXT DEFAULT 'Set 1',
+  language TEXT DEFAULT 'english',
+  maximum_marks INT NOT NULL DEFAULT 80,
+  duration_minutes INT NOT NULL DEFAULT 180,
+  source_document_id UUID REFERENCES public.source_documents(id) ON DELETE SET NULL,
+  source_url TEXT NOT NULL,
+  verification_status TEXT NOT NULL DEFAULT 'VERIFIED' CHECK (verification_status IN ('NEEDS_VERIFICATION', 'VERIFIED', 'AI_GENERATED_PRACTICE')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.3 EXTRACTED INDEPENDENT QUESTIONS TABLE
+CREATE TABLE IF NOT EXISTS public.questions (
+  id TEXT PRIMARY KEY,
+  paper_id TEXT NOT NULL REFERENCES public.question_papers(id) ON DELETE CASCADE,
+  question_number INT NOT NULL,
+  section TEXT NOT NULL, -- e.g. "Section A", "Section B"
+  question_type TEXT NOT NULL CHECK (question_type IN ('mcq', 'numerical', 'short_answer', 'long_answer', 'case_based', 'assertion_reason')),
+  question_text TEXT NOT NULL,
+  marks INT NOT NULL DEFAULT 1,
+  page_number INT,
+  image_reference TEXT,
+  options JSONB, -- [{ "id": "a", "label": "A", "text": "..." }]
+  correct_answer TEXT,
+  official_marking_scheme JSONB,
+  ai_explanation JSONB,
+  chapter_id TEXT,
+  topic_id TEXT,
+  difficulty TEXT DEFAULT 'medium' CHECK (difficulty IN ('easy', 'medium', 'hard')),
+  source_document_id UUID REFERENCES public.source_documents(id) ON DELETE SET NULL,
+  verification_status TEXT NOT NULL DEFAULT 'VERIFIED' CHECK (verification_status IN ('OFFICIAL_VERIFIED', 'NEEDS_REVIEW', 'AI_GENERATED')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.4 TEXTBOOKS TABLE
+CREATE TABLE IF NOT EXISTS public.books (
+  id TEXT PRIMARY KEY, -- e.g. "ncert-class10-science"
+  board TEXT NOT NULL,
+  class_level INT NOT NULL CHECK (class_level IN (10, 11, 12)),
+  subject TEXT NOT NULL,
+  title TEXT NOT NULL,
+  edition TEXT NOT NULL,
+  academic_year TEXT NOT NULL,
+  publisher TEXT NOT NULL DEFAULT 'NCERT',
+  total_pages INT NOT NULL DEFAULT 0,
+  source_document_id UUID REFERENCES public.source_documents(id) ON DELETE SET NULL,
+  cover_url TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'OFFICIALLY_PUBLISHED',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.5 BOOK SECTIONS & TOPIC CHUNKS (Preserves exact page references)
+CREATE TABLE IF NOT EXISTS public.book_sections (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL REFERENCES public.books(id) ON DELETE CASCADE,
+  chapter_number INT NOT NULL,
+  chapter_title TEXT NOT NULL,
+  section_number TEXT NOT NULL, -- e.g. "1.2.3"
+  section_title TEXT NOT NULL,
+  start_page INT NOT NULL,
+  end_page INT NOT NULL,
+  content_text TEXT NOT NULL,
+  topics JSONB DEFAULT '[]'::jsonb,
+  summary TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.6 IMPORT JOBS TABLE (Background ingestion queue)
+CREATE TABLE IF NOT EXISTS public.import_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_id TEXT NOT NULL,
+  document_id UUID REFERENCES public.source_documents(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'QUEUED' CHECK (status IN ('QUEUED', 'DOWNLOADING', 'PROCESSING', 'OCR', 'EXTRACTING', 'MAPPING', 'VALIDATING', 'COMPLETED', 'FAILED')),
+  progress_percent INT DEFAULT 0 CHECK (progress_percent BETWEEN 0 AND 100),
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  error_message TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- 13.7 DOCUMENT INDEXES
+CREATE INDEX IF NOT EXISTS idx_source_docs_board_class ON public.source_documents(board, class_level, subject);
+CREATE INDEX IF NOT EXISTS idx_source_docs_checksum ON public.source_documents(checksum);
+CREATE INDEX IF NOT EXISTS idx_questions_paper ON public.questions(paper_id);
+CREATE INDEX IF NOT EXISTS idx_questions_chapter ON public.questions(chapter_id);
+CREATE INDEX IF NOT EXISTS idx_book_sections_book ON public.book_sections(book_id, chapter_number);
+CREATE INDEX IF NOT EXISTS idx_import_jobs_status ON public.import_jobs(status);
+
+-- 13.8 RLS FOR DOCUMENTS & INGESTION
+ALTER TABLE public.source_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.question_papers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.book_sections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.import_jobs ENABLE ROW LEVEL SECURITY;
+
+-- Public can read verified documents & questions
+CREATE POLICY "Public read verified source documents"
+  ON public.source_documents FOR SELECT
+  USING (verification_status IN ('VERIFIED', 'EXTRACTED'));
+
+CREATE POLICY "Public read question papers"
+  ON public.question_papers FOR SELECT
+  USING (true);
+
+CREATE POLICY "Public read questions"
+  ON public.questions FOR SELECT
+  USING (true);
+
+CREATE POLICY "Public read books and sections"
+  ON public.books FOR SELECT
+  USING (true);
+
+CREATE POLICY "Public read book sections"
+  ON public.book_sections FOR SELECT
+  USING (true);
+
+-- Admins can manage all documents and import jobs
+CREATE POLICY "Admins manage source documents"
+  ON public.source_documents FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins manage import jobs"
+  ON public.import_jobs FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
