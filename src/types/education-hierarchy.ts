@@ -16,12 +16,19 @@ export type BoardIdentifier =
   | "bseb" // Bihar
   | "wbchse" // West Bengal
   | "rbse" // Rajasthan
+  | "hbse" // Haryana
   | "gseb" // Gujarat
   | "kbpe" // Kerala
   | "mpbse" // Madhya Pradesh
   | "pseb" // Punjab
-  | "chse_odisha"
-  | "ahsec_assam"
+  | "cgbse" // Chhattisgarh
+  | "jac" // Jharkhand
+  | "chse_odisha" // Odisha
+  | "ubse" // Uttarakhand
+  | "hpbose" // Himachal Pradesh
+  | "jkbose" // Jammu & Kashmir
+  | "ahsec_assam" // Assam
+  | "gbshse" // Goa
   | "other_state_board";
 
 export type AcademicClassLevel = 10 | 11 | 12;

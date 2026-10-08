@@ -81,6 +81,10 @@ export type PaperType = "official_board" | "sample_paper" | "compartment" | "pre
 export type ContentStatus =
   | "OFFICIAL_VERIFIED"
   | "NEEDS_VERIFICATION"
+  | "EXTRACTION_INCOMPLETE"
+  | "LEGACY_INVALID"
+  | "SOURCE_UNAVAILABLE"
+  | "OCR_REVIEW_REQUIRED"
   | "DEMO"
   | "AI_GENERATED_PRACTICE"
   | "PROCESSING"
@@ -111,6 +115,11 @@ export interface QuestionPaper {
   paperCode?: string;
   academicYear?: string;
   checksum?: string;
+  // Completeness Tracking (Sections 10 & 36)
+  isExtractionIncomplete?: boolean;
+  totalQuestionsExpected?: number;
+  verifiedQuestionsCount?: number;
+  extractionNotes?: string;
 }
 
 export interface PaperSection {
@@ -159,6 +168,8 @@ export interface ExamQuestion {
   related3DModelId?: string;
   chapterName?: string;
   topicName?: string;
+  subtopic?: string;
+  answerSource?: "OFFICIAL_MARKING_SCHEME" | "OFFICIAL_MODEL_ANSWER" | "AI_EXPLANATION" | "NOT_AVAILABLE";
 }
 
 export interface MockExam {

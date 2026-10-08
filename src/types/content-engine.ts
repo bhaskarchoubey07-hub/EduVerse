@@ -28,6 +28,139 @@ export type AllowedAction =
   | "LINK_ONLY"
   | "METADATA_ONLY";
 
+export type OfficialSourceType =
+  | "official_board"
+  | "official_ncert"
+  | "official_cisce"
+  | "official_nios"
+  | "authorized_publisher"
+  | "public_domain"
+  | "open_license"
+  | "teacher_uploaded"
+  | "admin_uploaded"
+  | "external_reference";
+
+export type OfficialTrustLevel = "LEVEL_1" | "LEVEL_2" | "LEVEL_3" | "LEVEL_4" | "LEVEL_5";
+
+export interface ContentSourceRecord {
+  id: string;
+  board_id: string;
+  source_name: string;
+  source_type: OfficialSourceType;
+  official_url: string;
+  document_url?: string;
+  source_category: "curriculum" | "syllabus" | "question_paper" | "marking_scheme" | "sample_paper" | "textbook" | "question_bank";
+  language: string;
+  class?: number;
+  subject?: string;
+  academic_year: string;
+  syllabus_year?: string;
+  license_status: string;
+  permission_status: "verified_public" | "fair_use_metadata" | "authorized_redistribution" | "link_only";
+  trust_level: OfficialTrustLevel;
+  last_checked_at: string;
+  checksum: string;
+  content_hash: string;
+  status: "active" | "deprecated" | "pending_verification" | "offline";
+  notes?: string;
+}
+
+export interface BookRecord {
+  id: string;
+  board_id: string;
+  class_id: number;
+  subject_id: string;
+  title: string;
+  author?: string;
+  publisher: string;
+  edition: string;
+  academic_year: string;
+  language: string;
+  isbn?: string;
+  source_id: string;
+  source_url: string;
+  storage_path?: string;
+  license_status: string;
+  verification_status: VerificationLevel;
+  published: boolean;
+}
+
+export interface BookChapterRecord {
+  id: string;
+  book_id: string;
+  chapter_number: number;
+  chapter_title: string;
+  page_start: number;
+  page_end: number;
+  source_page_start: number;
+  source_page_end: number;
+}
+
+export interface BookSectionRecord {
+  id: string;
+  chapter_id: string;
+  title: string;
+  section_number: string;
+  page_number: number;
+  content: string;
+  content_type: "concept" | "experiment" | "example" | "summary" | "intext_question";
+}
+
+export interface BookTopicRecord {
+  id: string;
+  section_id: string;
+  topic_name: string;
+  subtopic_name?: string;
+  content: string;
+  page_number: number;
+}
+
+export interface MarkingSchemeRecord {
+  id: string;
+  paper_id: string;
+  question_id: string;
+  official_marks: number;
+  marking_points: { point: string; marksAllocated: number }[];
+  accepted_answers: string[];
+  alternative_answers?: string[];
+  source_document: string;
+  source_page: number;
+  verification_status: "OFFICIAL_VERIFIED" | "AI_ASSISTED_EVALUATION" | "NEEDS_REVIEW";
+}
+
+export interface Learning3DObjectRecord {
+  id: string;
+  subject: string;
+  chapter: string;
+  topic: string;
+  object_name: string;
+  model_url: string;
+  description: string;
+  source: string;
+  verified: boolean;
+  related_questions?: string[];
+  related_content?: string;
+}
+
+export interface ImportJobRecord {
+  id: string;
+  source_id: string;
+  job_type: "document_ingestion" | "ocr_extraction" | "pyq_mapping" | "syllabus_import";
+  board: string;
+  class: number;
+  subject: string;
+  year?: number;
+  status: "queued" | "discovering" | "downloading" | "processing" | "extracting" | "mapping" | "validating" | "review" | "completed" | "failed";
+  progress: number;
+  documents_found: number;
+  documents_processed: number;
+  documents_failed: number;
+  questions_extracted: number;
+  started_at: string;
+  completed_at?: string;
+  error_log?: string[];
+}
+
 export type SourceType =
   | "OFFICIAL_BOARD_PORTAL"
   | "GOVERNMENT_EDUCATION_REPOSITORY"

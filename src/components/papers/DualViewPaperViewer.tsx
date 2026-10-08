@@ -153,12 +153,16 @@ export function DualViewPaperViewer({
                 </span>
               )}
               {/* SOURCE STATUS BADGE (Item 35) */}
-              {paper.contentStatus === "OFFICIAL_VERIFIED" || paper.isVerifiedOfficial ? (
+              {paper.contentStatus === "EXTRACTION_INCOMPLETE" || paper.isExtractionIncomplete ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <AlertTriangle className="w-3.5 h-3.5" /> EXTRACTION_INCOMPLETE ({paper.verifiedQuestionsCount || allExtractedQuestions.length}/{paper.totalQuestionsExpected || 39})
+                </span>
+              ) : paper.contentStatus === "OFFICIAL_VERIFIED" || paper.isVerifiedOfficial ? (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   <ShieldCheck className="w-3.5 h-3.5" /> OFFICIAL
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-600">
                   <AlertTriangle className="w-3.5 h-3.5" /> NEEDS_VERIFICATION
                 </span>
               )}
@@ -352,6 +356,21 @@ export function DualViewPaperViewer({
           )}
         </div>
       </div>
+
+      {/* EXTRACTION INCOMPLETE / AUDIT BANNER (Prompt Sections 10 & 36) */}
+      {(paper.contentStatus === "EXTRACTION_INCOMPLETE" || paper.isExtractionIncomplete) && (
+        <div className="bg-amber-950/60 border-b border-amber-500/30 px-4 sm:px-6 py-2.5 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-amber-200 shrink-0">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Extraction Incomplete:</strong> {paper.extractionNotes || `Source imported: ${paper.verifiedQuestionsCount || allExtractedQuestions.length} of ${paper.totalQuestionsExpected || 39} verified questions extracted. This content is not yet verified as a complete paper for student exam simulation.`}
+            </span>
+          </div>
+          <span className="text-[10px] bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded font-mono border border-amber-500/20 shrink-0">
+            {paper.verifiedQuestionsCount || allExtractedQuestions.length}/{paper.totalQuestionsExpected || 39} VERIFIED QUESTIONS
+          </span>
+        </div>
+      )}
 
       {/* MAIN CONTENT CANVAS */}
       <div className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-8 flex justify-center">

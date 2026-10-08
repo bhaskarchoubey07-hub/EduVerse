@@ -347,100 +347,180 @@ CREATE TABLE IF NOT EXISTS public.questions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 13.4 TEXTBOOKS TABLE
+-- 13.4 OFFICIAL SOURCE REGISTRY (Section 3 of Architecture)
+CREATE TABLE IF NOT EXISTS public.content_sources (
+  id TEXT PRIMARY KEY,
+  board_id TEXT NOT NULL,
+  source_name TEXT NOT NULL,
+  source_type TEXT NOT NULL CHECK (source_type IN ('official_board', 'official_ncert', 'official_cisce', 'official_nios', 'authorized_publisher', 'public_domain', 'open_license', 'teacher_uploaded', 'admin_uploaded', 'external_reference')),
+  official_url TEXT NOT NULL,
+  document_url TEXT,
+  source_category TEXT NOT NULL CHECK (source_category IN ('curriculum', 'syllabus', 'question_paper', 'marking_scheme', 'sample_paper', 'textbook', 'question_bank')),
+  language TEXT NOT NULL DEFAULT 'english',
+  class INT CHECK (class IN (10, 11, 12)),
+  subject TEXT,
+  academic_year TEXT NOT NULL,
+  syllabus_year TEXT,
+  license_status TEXT NOT NULL DEFAULT 'GOVERNMENT_OPEN_DATA',
+  permission_status TEXT NOT NULL DEFAULT 'verified_public' CHECK (permission_status IN ('verified_public', 'fair_use_metadata', 'authorized_redistribution', 'link_only')),
+  trust_level TEXT NOT NULL DEFAULT 'LEVEL_1' CHECK (trust_level IN ('LEVEL_1', 'LEVEL_2', 'LEVEL_3', 'LEVEL_4', 'LEVEL_5')),
+  last_checked_at TIMESTAMPTZ DEFAULT NOW(),
+  checksum TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'deprecated', 'pending_verification', 'offline')),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.5 TEXTBOOKS TABLE (Section 6)
 CREATE TABLE IF NOT EXISTS public.books (
   id TEXT PRIMARY KEY, -- e.g. "ncert-class10-science"
-  board TEXT NOT NULL,
-  class_level INT NOT NULL CHECK (class_level IN (10, 11, 12)),
-  subject TEXT NOT NULL,
+  board_id TEXT NOT NULL,
+  class_id INT NOT NULL CHECK (class_id IN (10, 11, 12)),
+  subject_id TEXT NOT NULL,
   title TEXT NOT NULL,
+  author TEXT,
+  publisher TEXT NOT NULL DEFAULT 'NCERT',
   edition TEXT NOT NULL,
   academic_year TEXT NOT NULL,
-  publisher TEXT NOT NULL DEFAULT 'NCERT',
-  total_pages INT NOT NULL DEFAULT 0,
-  source_document_id UUID REFERENCES public.source_documents(id) ON DELETE SET NULL,
-  cover_url TEXT,
+  language TEXT NOT NULL DEFAULT 'english',
+  isbn TEXT,
+  source_id TEXT REFERENCES public.content_sources(id) ON DELETE SET NULL,
+  source_url TEXT NOT NULL,
+  storage_path TEXT,
+  license_status TEXT NOT NULL DEFAULT 'EDUCATIONAL_FAIR_USE',
   verification_status TEXT NOT NULL DEFAULT 'OFFICIALLY_PUBLISHED',
+  published BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 13.5 BOOK SECTIONS & TOPIC CHUNKS (Preserves exact page references)
-CREATE TABLE IF NOT EXISTS public.book_sections (
+-- 13.6 BOOK CHAPTERS TABLE
+CREATE TABLE IF NOT EXISTS public.book_chapters (
   id TEXT PRIMARY KEY,
   book_id TEXT NOT NULL REFERENCES public.books(id) ON DELETE CASCADE,
   chapter_number INT NOT NULL,
   chapter_title TEXT NOT NULL,
-  section_number TEXT NOT NULL, -- e.g. "1.2.3"
-  section_title TEXT NOT NULL,
-  start_page INT NOT NULL,
-  end_page INT NOT NULL,
-  content_text TEXT NOT NULL,
-  topics JSONB DEFAULT '[]'::jsonb,
-  summary TEXT,
+  page_start INT NOT NULL,
+  page_end INT NOT NULL,
+  source_page_start INT NOT NULL,
+  source_page_end INT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 13.6 IMPORT JOBS TABLE (Background ingestion queue)
+-- 13.7 BOOK SECTIONS & TOPIC CHUNKS (Preserves exact page references)
+CREATE TABLE IF NOT EXISTS public.book_sections (
+  id TEXT PRIMARY KEY,
+  chapter_id TEXT NOT NULL REFERENCES public.book_chapters(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  section_number TEXT NOT NULL, -- e.g. "1.2.3"
+  page_number INT NOT NULL,
+  content TEXT NOT NULL,
+  content_type TEXT NOT NULL DEFAULT 'concept' CHECK (content_type IN ('concept', 'experiment', 'example', 'summary', 'intext_question')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.8 BOOK TOPICS TABLE
+CREATE TABLE IF NOT EXISTS public.book_topics (
+  id TEXT PRIMARY KEY,
+  section_id TEXT NOT NULL REFERENCES public.book_sections(id) ON DELETE CASCADE,
+  topic_name TEXT NOT NULL,
+  subtopic_name TEXT,
+  content TEXT NOT NULL,
+  page_number INT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.9 MARKING SCHEMES TABLE (Section 13)
+CREATE TABLE IF NOT EXISTS public.marking_schemes (
+  id TEXT PRIMARY KEY,
+  paper_id TEXT NOT NULL REFERENCES public.question_papers(id) ON DELETE CASCADE,
+  question_id TEXT NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
+  official_marks INT NOT NULL DEFAULT 1,
+  marking_points JSONB NOT NULL DEFAULT '[]'::jsonb,
+  accepted_answers JSONB NOT NULL DEFAULT '[]'::jsonb,
+  alternative_answers JSONB DEFAULT '[]'::jsonb,
+  source_document TEXT NOT NULL,
+  source_page INT NOT NULL,
+  verification_status TEXT NOT NULL DEFAULT 'OFFICIAL_VERIFIED' CHECK (verification_status IN ('OFFICIAL_VERIFIED', 'AI_ASSISTED_EVALUATION', 'NEEDS_REVIEW')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.10 LEARNING 3D OBJECTS TABLE (Section 27)
+CREATE TABLE IF NOT EXISTS public.learning_3d_objects (
+  id TEXT PRIMARY KEY,
+  subject TEXT NOT NULL,
+  chapter TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  object_name TEXT NOT NULL,
+  model_url TEXT NOT NULL,
+  description TEXT NOT NULL,
+  source TEXT NOT NULL,
+  verified BOOLEAN DEFAULT true,
+  related_questions JSONB DEFAULT '[]'::jsonb,
+  related_content TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13.11 IMPORT JOBS TABLE (Background ingestion queue - Section 30)
 CREATE TABLE IF NOT EXISTS public.import_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source_id TEXT NOT NULL,
-  document_id UUID REFERENCES public.source_documents(id) ON DELETE CASCADE,
-  file_name TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'QUEUED' CHECK (status IN ('QUEUED', 'DOWNLOADING', 'PROCESSING', 'OCR', 'EXTRACTING', 'MAPPING', 'VALIDATING', 'COMPLETED', 'FAILED')),
-  progress_percent INT DEFAULT 0 CHECK (progress_percent BETWEEN 0 AND 100),
+  job_type TEXT NOT NULL DEFAULT 'document_ingestion' CHECK (job_type IN ('document_ingestion', 'ocr_extraction', 'pyq_mapping', 'syllabus_import')),
+  board TEXT NOT NULL,
+  class INT NOT NULL CHECK (class IN (10, 11, 12)),
+  subject TEXT NOT NULL,
+  year INT,
+  status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'discovering', 'downloading', 'processing', 'extracting', 'mapping', 'validating', 'review', 'completed', 'failed')),
+  progress INT DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+  documents_found INT DEFAULT 0,
+  documents_processed INT DEFAULT 0,
+  documents_failed INT DEFAULT 0,
+  questions_extracted INT DEFAULT 0,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
-  error_message TEXT,
-  metadata JSONB DEFAULT '{}'::jsonb
+  error_log JSONB DEFAULT '[]'::jsonb
 );
 
--- 13.7 DOCUMENT INDEXES
+-- 13.12 DOCUMENT INDEXES
+CREATE INDEX IF NOT EXISTS idx_content_sources_board ON public.content_sources(board_id, trust_level);
 CREATE INDEX IF NOT EXISTS idx_source_docs_board_class ON public.source_documents(board, class_level, subject);
 CREATE INDEX IF NOT EXISTS idx_source_docs_checksum ON public.source_documents(checksum);
 CREATE INDEX IF NOT EXISTS idx_questions_paper ON public.questions(paper_id);
 CREATE INDEX IF NOT EXISTS idx_questions_chapter ON public.questions(chapter_id);
-CREATE INDEX IF NOT EXISTS idx_book_sections_book ON public.book_sections(book_id, chapter_number);
+CREATE INDEX IF NOT EXISTS idx_marking_schemes_question ON public.marking_schemes(question_id);
+CREATE INDEX IF NOT EXISTS idx_book_chapters_book ON public.book_chapters(book_id, chapter_number);
+CREATE INDEX IF NOT EXISTS idx_learning_3d_subject ON public.learning_3d_objects(subject, chapter);
 CREATE INDEX IF NOT EXISTS idx_import_jobs_status ON public.import_jobs(status);
 
--- 13.8 RLS FOR DOCUMENTS & INGESTION
+-- 13.13 RLS FOR DOCUMENTS & INGESTION
+ALTER TABLE public.content_sources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.source_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.question_papers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.marking_schemes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.book_chapters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.book_sections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.book_topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.learning_3d_objects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.import_jobs ENABLE ROW LEVEL SECURITY;
 
 -- Public can read verified documents & questions
-CREATE POLICY "Public read verified source documents"
-  ON public.source_documents FOR SELECT
-  USING (verification_status IN ('VERIFIED', 'EXTRACTED'));
-
-CREATE POLICY "Public read question papers"
-  ON public.question_papers FOR SELECT
-  USING (true);
-
-CREATE POLICY "Public read questions"
-  ON public.questions FOR SELECT
-  USING (true);
-
-CREATE POLICY "Public read books and sections"
-  ON public.books FOR SELECT
-  USING (true);
-
-CREATE POLICY "Public read book sections"
-  ON public.book_sections FOR SELECT
-  USING (true);
+CREATE POLICY "Public read content sources" ON public.content_sources FOR SELECT USING (true);
+CREATE POLICY "Public read source documents" ON public.source_documents FOR SELECT USING (true);
+CREATE POLICY "Public read question papers" ON public.question_papers FOR SELECT USING (true);
+CREATE POLICY "Public read questions" ON public.questions FOR SELECT USING (true);
+CREATE POLICY "Public read marking schemes" ON public.marking_schemes FOR SELECT USING (true);
+CREATE POLICY "Public read books and hierarchy" ON public.books FOR SELECT USING (true);
+CREATE POLICY "Public read book chapters" ON public.book_chapters FOR SELECT USING (true);
+CREATE POLICY "Public read book sections" ON public.book_sections FOR SELECT USING (true);
+CREATE POLICY "Public read book topics" ON public.book_topics FOR SELECT USING (true);
+CREATE POLICY "Public read 3d objects" ON public.learning_3d_objects FOR SELECT USING (true);
 
 -- Admins can manage all documents and import jobs
-CREATE POLICY "Admins manage source documents"
-  ON public.source_documents FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+CREATE POLICY "Admins manage content sources" ON public.content_sources FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Admins manage source documents" ON public.source_documents FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Admins manage import jobs" ON public.import_jobs FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
-CREATE POLICY "Admins manage import jobs"
-  ON public.import_jobs FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-  );
 

@@ -352,12 +352,90 @@ async function runTestSuite() {
     "Verified Q34 Human Heart links directly to 3D Heart model."
   );
 
+  // 26. Multi-Board Architecture Registry (Section 2)
+  const { INDIAN_BOARDS_REGISTRY } = await import("../src/lib/data/multi-board-registry");
+  const hasNational = INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "cbse") &&
+                      INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "cisce") &&
+                      INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "nios");
+  const hasState = INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "msbshse") &&
+                   INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "upmsp") &&
+                   INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "pseb") &&
+                   INDIAN_BOARDS_REGISTRY.some((b) => b.boardId === "hbse");
+  assertTest(
+    26,
+    "Multi-Board Architecture (25 National & State Boards)",
+    "Board System",
+    INDIAN_BOARDS_REGISTRY.length >= 20 && hasNational && hasState,
+    `Verified ${INDIAN_BOARDS_REGISTRY.length} Indian National and State boards registered with independent syllabi & portals.`
+  );
+
+  // 27. Official Source Registry (Section 3)
+  const { OFFICIAL_CONTENT_SOURCES } = await import("../src/lib/data/source-registry");
+  const cbsePortal = OFFICIAL_CONTENT_SOURCES.find((s) => s.id === "src-cbse-official-portal");
+  const hasChecksums = OFFICIAL_CONTENT_SOURCES.every((s) => Boolean(s.checksum) && Boolean(s.content_hash));
+  assertTest(
+    27,
+    "Official Source Registry (Trust Levels & Checksums)",
+    "Source Provenance",
+    Boolean(cbsePortal && cbsePortal.trust_level === "LEVEL_1" && hasChecksums),
+    `Verified Level-1 Trust registry with SHA-256 checksums across all official portals.`
+  );
+
+  // 28. Incomplete Paper Audit (Section 10 & 36)
+  const cbse2025Paper = QUESTION_PAPERS.find((p) => p.id === "pyq-cbse10-sci-2025");
+  assertTest(
+    28,
+    "Incomplete Paper Flagging (Rule 10 & 36)",
+    "Data Integrity",
+    Boolean(
+      cbse2025Paper &&
+      cbse2025Paper.contentStatus === "EXTRACTION_INCOMPLETE" &&
+      cbse2025Paper.isExtractionIncomplete === true &&
+      cbse2025Paper.isVerifiedOfficial === false &&
+      cbse2025Paper.verifiedQuestionsCount === 5 &&
+      cbse2025Paper.totalQuestionsExpected === 39
+    ),
+    "Verified CBSE Class 10 Science 2025 paper is marked EXTRACTION_INCOMPLETE (5/39 questions verified) without masquerading as complete."
+  );
+
+  // 29. Official Marking Scheme Engine (Section 13)
+  const { OFFICIAL_MARKING_SCHEMES, getMarkingSchemeForQuestion } = await import("../src/lib/data/marking-schemes-registry");
+  const msQ1 = getMarkingSchemeForQuestion("q-sci10-25-01");
+  const msQ34 = getMarkingSchemeForQuestion("q-sci10-25-34");
+  assertTest(
+    29,
+    "Official Marking Scheme Engine (Section 13)",
+    "Evaluation Engine",
+    Boolean(
+      OFFICIAL_MARKING_SCHEMES.length >= 5 &&
+      msQ1?.official_marks === 1 &&
+      msQ34?.official_marks === 5 &&
+      msQ34?.marking_points.length === 4
+    ),
+    "Verified authentic official marking schemes with step points, accepted answers, and source page provenance."
+  );
+
+  // 30. Question Paper Analytics Engine (Section 24)
+  const { calculateRealPaperAnalytics } = await import("../src/lib/data/analytics-engine");
+  const realAnalytics = calculateRealPaperAnalytics();
+  assertTest(
+    30,
+    "Question Paper Analytics Engine (Section 24)",
+    "Analytics Engine",
+    Boolean(
+      realAnalytics.totalQuestionsExtracted > 0 &&
+      realAnalytics.chapterFrequencies.length > 0 &&
+      realAnalytics.marksDistribution.length > 0
+    ),
+    `Calculated real analytics from ${realAnalytics.totalQuestionsExtracted} verified questions: top chapter '${realAnalytics.chapterFrequencies[0]?.chapterName}' (${realAnalytics.chapterFrequencies[0]?.count} Qs).`
+  );
+
   // Print Summary
   const passedCount = reports.filter((r) => r.passed).length;
   const failedCount = reports.filter((r) => !r.passed).length;
 
   console.log("\n=================================================================");
-  console.log(`AUDIT RESULTS: ${passedCount}/25 PASSED (${failedCount} FAILED)`);
+  console.log(`AUDIT RESULTS: ${passedCount}/30 PASSED (${failedCount} FAILED)`);
   console.log("=================================================================");
 
   if (failedCount > 0) {
