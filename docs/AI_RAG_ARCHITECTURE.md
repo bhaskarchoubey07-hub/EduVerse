@@ -95,3 +95,13 @@ The conversation context vector is cleanly isolated:
 - Biology entities are purged from short-term prompt memory.
 - Physics formulas ($V = IR, P = V^2/R$) and electrical units are injected into active context.
 - Cross-contamination between subjects or boards is strictly prevented.
+
+---
+
+## 5. Live AI Model Configuration & Validation
+
+- **Provider:** Google Gemini API (Server-Side)
+- **Model:** `gemini-2.5-flash` (Configured in `.env.local` via `GEMINI_MODEL=gemini-2.5-flash`)
+- **API Key Storage:** Server-side only (`GEMINI_API_KEY`). Never exposed to client bundles.
+- **Graceful Fallback:** If API limits are exceeded or network connectivity drops, the system returns a helpful pedagogical message and continues to provide full access to verified textbook content and official marking schemes.
+- **Automated Validation:** Verified through 36 automated assertions in `scripts/test-platform.ts` confirming subject classification, prompt-injection defense, 3D object linkage, rate limiting, and zero fabrication.

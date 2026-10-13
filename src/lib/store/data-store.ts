@@ -32,6 +32,7 @@ import {
   INITIAL_DAILY_MISSIONS,
   INITIAL_SAVED_REVISIONS,
 } from "@/lib/data/universe-data";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const ATTEMPTS_KEY = "eduverse_exam_attempts";
 const BOOKMARKS_KEY = "eduverse_bookmarked_papers";
@@ -248,6 +249,87 @@ export function useDataStore() {
     } finally {
       setIsReady(true);
     }
+
+    // Sync from Supabase if active session exists
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (!session?.user) return;
+        try {
+          // Fetch user mock exam results from Supabase
+          const { data: dbAttempts } = await supabase
+            .from("mock_results")
+            .select("*")
+            .eq("user_id", session.user.id)
+            .order("submitted_at", { ascending: false });
+
+          if (dbAttempts && dbAttempts.length > 0) {
+            const mappedAttempts: ExamAttempt[] = dbAttempts.map((row) => ({
+              id: row.id,
+              examId: row.exam_id,
+              examTitle: "Online Mock Examination",
+              studentId: row.user_id,
+              subjectId: "cbse-10-sci",
+              subjectName: "Science",
+              startedAt: row.submitted_at,
+              completedAt: row.submitted_at,
+              score: Number(row.score),
+              totalMarks: Number(row.total_marks),
+              percentage: Number(row.percentage),
+              timeSpentSeconds: Number(row.time_taken) || 1800,
+              accuracyRate: Math.round(Number(row.percentage)),
+              status: "completed",
+              responses: {},
+              topicBreakdown: [],
+            }));
+            setAttempts((prev) => {
+              const merged = [...mappedAttempts, ...prev.filter((p) => !mappedAttempts.some((ma) => ma.id === p.id))];
+              localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(merged));
+              return merged;
+            });
+          }
+
+          // Fetch user saved bookmarks and notes from Supabase
+          const { data: dbSaved } = await supabase
+            .from("saved_items")
+            .select("*")
+            .eq("user_id", session.user.id);
+
+          if (dbSaved && dbSaved.length > 0) {
+            const pyqBookmarks = dbSaved.filter((i) => i.content_type === "pyq").map((i) => i.content_id);
+            if (pyqBookmarks.length > 0) {
+              setBookmarks((prev) => {
+                const combined = Array.from(new Set([...prev, ...pyqBookmarks]));
+                localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(combined));
+                return combined;
+              });
+            }
+
+            const dbNotes: SavedNote[] = dbSaved
+              .filter((i) => i.content_type === "note")
+              .map((i) => ({
+                id: i.id || i.content_id,
+                studentId: i.user_id,
+                title: i.title,
+                subjectId: i.metadata?.subjectId || "cbse-10-sci",
+                chapterId: i.metadata?.chapterId || "ch-sci10-01",
+                content: i.metadata?.content || "",
+                noteType: i.metadata?.noteType || "student_written",
+                createdAt: i.metadata?.createdAt || i.created_at,
+              }));
+
+            if (dbNotes.length > 0) {
+              setNotes((prev) => {
+                const merged = [...dbNotes, ...prev.filter((p) => !dbNotes.some((dn) => dn.id === p.id))];
+                localStorage.setItem(NOTES_KEY, JSON.stringify(merged));
+                return merged;
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Supabase initial sync error:", err);
+        }
+      });
+    }
   }, []);
 
   const saveAttempt = (newAttempt: ExamAttempt) => {
@@ -261,15 +343,88 @@ export function useDataStore() {
     if (newAttempt.percentage >= 90) {
       unlockAchievement("PERFECTIONIST_90");
     }
+
+    // Sync to Supabase mock_results and study_sessions if logged in
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          supabase
+            .from("mock_results")
+            .insert({
+              user_id: session.user.id,
+              exam_id: newAttempt.examId,
+              score: newAttempt.score,
+              total_marks: newAttempt.totalMarks,
+              percentage: newAttempt.percentage,
+              correct_answers: Math.round((newAttempt.score / (newAttempt.totalMarks || 1)) * 10),
+              incorrect_answers: Math.max(0, 10 - Math.round((newAttempt.score / (newAttempt.totalMarks || 1)) * 10)),
+              unanswered: 0,
+              time_taken: newAttempt.timeSpentSeconds || 1800,
+              submitted_at: newAttempt.completedAt || new Date().toISOString(),
+            })
+            .then(({ error }) => {
+              if (error) console.warn("Supabase mock_results insert notice:", error.message);
+            });
+
+          supabase
+            .from("study_sessions")
+            .insert({
+              user_id: session.user.id,
+              subject: newAttempt.subjectName || "Science",
+              topic: newAttempt.examTitle,
+              duration_minutes: Math.ceil((newAttempt.timeSpentSeconds || 1800) / 60),
+              activity_type: "mock_exam",
+              started_at: newAttempt.startedAt,
+              ended_at: newAttempt.completedAt,
+            })
+            .then(({ error }) => {
+              if (error) console.warn("Supabase study_sessions insert notice:", error.message);
+            });
+        }
+      });
+    }
   };
 
   const toggleBookmark = (paperId: string) => {
+    let nowExists = false;
     setBookmarks(prev => {
       const exists = prev.includes(paperId);
+      nowExists = !exists;
       const updated = exists ? prev.filter(id => id !== paperId) : [...prev, paperId];
       localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(updated));
       return updated;
     });
+
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          if (nowExists) {
+            supabase
+              .from("saved_items")
+              .insert({
+                user_id: session.user.id,
+                content_type: "pyq",
+                content_id: paperId,
+                title: paperId,
+                metadata: { bookmarkedAt: new Date().toISOString() },
+              })
+              .then(({ error }) => {
+                if (error) console.warn("Supabase bookmark insert notice:", error.message);
+              });
+          } else {
+            supabase
+              .from("saved_items")
+              .delete()
+              .eq("user_id", session.user.id)
+              .eq("content_type", "pyq")
+              .eq("content_id", paperId)
+              .then(({ error }) => {
+                if (error) console.warn("Supabase bookmark delete notice:", error.message);
+              });
+          }
+        }
+      });
+    }
   };
 
   const saveNote = (note: Omit<SavedNote, "id" | "createdAt">) => {
@@ -283,6 +438,32 @@ export function useDataStore() {
       localStorage.setItem(NOTES_KEY, JSON.stringify(updated));
       return updated;
     });
+
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          supabase
+            .from("saved_items")
+            .insert({
+              user_id: session.user.id,
+              content_type: "note",
+              content_id: newNote.id,
+              title: newNote.title,
+              metadata: {
+                subjectId: newNote.subjectId,
+                chapterId: newNote.chapterId,
+                content: newNote.content,
+                noteType: newNote.noteType,
+                createdAt: newNote.createdAt,
+              },
+            })
+            .then(({ error }) => {
+              if (error) console.warn("Supabase note insert notice:", error.message);
+            });
+        }
+      });
+    }
+
     return newNote;
   };
 
@@ -292,6 +473,22 @@ export function useDataStore() {
       localStorage.setItem(NOTES_KEY, JSON.stringify(updated));
       return updated;
     });
+
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          supabase
+            .from("saved_items")
+            .delete()
+            .eq("user_id", session.user.id)
+            .eq("content_type", "note")
+            .eq("content_id", noteId)
+            .then(({ error }) => {
+              if (error) console.warn("Supabase note delete notice:", error.message);
+            });
+        }
+      });
+    }
   };
 
   // Study Task Handlers

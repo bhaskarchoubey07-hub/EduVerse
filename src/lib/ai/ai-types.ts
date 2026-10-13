@@ -25,6 +25,7 @@ export interface EducationalContext {
   specificQuestionGrounding?: string;
   bookTitle?: string;
   bookPage?: number;
+  bookChapterGrounding?: string;
 }
 
 export interface AIChatMessage {

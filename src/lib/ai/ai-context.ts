@@ -134,6 +134,7 @@ SYLLABUS CHAPTER: ${q.chapterName || matchedChapter.title} • Topic: ${q.topicN
     return {
       ...context,
       chapter: context.chapter && context.chapter !== "General" ? context.chapter : matchedChapter.title,
+      bookChapterGrounding: matchedChapter.title,
       verifiedSyllabusSummary: syllabusSummary,
       recentPYQSample: pyqExcerpts,
       specificQuestionGrounding: questionGroundingText,
